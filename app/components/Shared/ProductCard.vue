@@ -1,11 +1,5 @@
 <script setup lang="ts">
-
-interface Product {
-    id: number
-    image?: string
-    name: string
-    price: number | string
-}
+import type { Product } from '~/data/products'
 
 const props = defineProps<{
     product: Product
@@ -15,8 +9,12 @@ const emit = defineEmits<{
     (e: 'add-to-cart', payload: Product): void
 }>()
 
+const cartStore = useCartStore()
+
 function onAdd() {
-    emit('add-to-cart', props.product)
+    console.log('Adding to cart', props.product)
+    cartStore.addToCart(props.product)
+    console.log('Cart store', cartStore.items)
 }
 </script>
 
@@ -34,7 +32,7 @@ function onAdd() {
                 {{ product.name }}
             </h3>
             <p class="mt-2 text-sm text-gray-600 dark:text-gray-300">
-                ${{ typeof product.price === 'number' ? product.price.toFixed(2) : product.price }}
+                GH₵{{ typeof product.price === 'number' ? product.price.toFixed(2) : product.price }}
             </p>
         </div>
 

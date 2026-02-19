@@ -6,12 +6,12 @@
 <template>
   <div class="font-inter">
     <UApp>
-      <UIAppTheme>
+      <UiAppTheme>
         <SharedNavBar />
         <SharedCartComponent />
         <slot />
         <SharedFooter />
-      </UIAppTheme>
+      </UiAppTheme>
     </UApp>
   </div>
 </template>
