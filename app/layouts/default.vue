@@ -4,10 +4,14 @@
 </script>
 
 <template>
-  <div>
+  <div class="font-inter">
     <UApp>
-      <SharedNavBar />
-      <slot />
+      <UIAppTheme>
+        <SharedNavBar />
+        <SharedCartComponent />
+        <slot />
+        <SharedFooter />
+      </UIAppTheme>
     </UApp>
   </div>
 </template>

@@ -2,9 +2,19 @@
 export default defineNuxtConfig({
   compatibilityDate: '2025-07-15',
   devtools: { enabled: true },
-  modules: ['@nuxt/image', '@nuxt/ui', '@nuxt/icon', '@nuxt/eslint'],
+  modules: [
+    '@nuxt/image',
+    '@nuxt/ui',
+    '@nuxt/icon',
+    '@nuxt/eslint',
+    '@nuxt/fonts'
+  ],
   css: ['~/assets/css/main.css'],
   ui: {
     colorMode: false,
-  }
+  },
+  fonts: {},
+  devServer: {
+    port: 3002,
+  },
 })
