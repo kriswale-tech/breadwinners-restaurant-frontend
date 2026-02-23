@@ -10,13 +10,13 @@ if (!loginStore.isLoggedIn) {
 <template>
     <div>
         <UApp>
-            <div class="flex">
+            <div class="flex ">
                 <div class="w-64 shrink-0 h-screen">
                     <AdminSidebarComponent />
                 </div>
                 <div class="flex-1 min-w-0">
                     <AdminNavbar />
-                    <div class="p-4">
+                    <div class=" py-8 container">
                         <slot />
                     </div>
                 </div>
