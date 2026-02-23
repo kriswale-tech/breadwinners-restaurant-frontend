@@ -5,9 +5,13 @@ export const useLoginStore = defineStore('login', () => {
     const phone = '0200000000'
     const password = 'password'
 
-    function login(phone: string, password: string) {
-        if (phone === phone && password === password) {
+    function login(phoneNumber: string, pass: string) {
+        if (phoneNumber === phone && pass === password) {
             isLoggedIn.value = true
+            return true
+        }
+        else {
+            return false
         }
     }
 
@@ -18,7 +22,7 @@ export const useLoginStore = defineStore('login', () => {
     return {
         isLoggedIn,
         login,
-        logout
+        logout,
     }
 }, {
     persist: true

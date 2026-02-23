@@ -24,9 +24,8 @@ export default defineNuxtConfig({
   //   storage: 'localStorage'
   // },
   routeRules: {
-    // Set layout for specific route
+    '/admin/auth/**': { appLayout: 'auth', ssr: false },
     '/admin': { appLayout: 'admin' },
-    // Set layout for multiple routes
-    '/admin/auth/**': { appLayout: false },
+    '/admin/**': { appLayout: 'admin' },
   },
 })

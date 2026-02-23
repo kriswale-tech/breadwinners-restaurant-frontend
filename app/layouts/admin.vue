@@ -9,8 +9,20 @@ if (!loginStore.isLoggedIn) {
 
 <template>
     <div>
-        admin layout
-        <slot />
+        <UApp>
+            <div class="flex">
+                <div class="w-64 shrink-0 h-screen">
+                    <AdminSidebarComponent />
+                </div>
+                <div class="flex-1 min-w-0">
+                    <AdminNavbar />
+                    <div class="p-4">
+                        <slot />
+                    </div>
+                </div>
+            </div>
+        </UApp>
+
     </div>
 </template>
 
