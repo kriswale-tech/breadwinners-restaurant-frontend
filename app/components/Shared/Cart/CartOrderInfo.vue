@@ -14,6 +14,11 @@ function clearAll() {
     cartStore.clearCart()
     close()
 }
+
+function goToCheckout() {
+    close()
+    navigateTo('/checkout')
+}
 </script>
 
 <template>
@@ -71,7 +76,7 @@ function clearAll() {
                         </span>
                     </div>
                     <div class="flex flex-col gap-2">
-                        <UButton block size="lg" color="primary" label="Proceed to checkout" @click="close" />
+                        <UButton block size="lg" color="primary" label="Proceed to checkout" @click="goToCheckout" />
                         <UButton block size="md" color="neutral" variant="soft" label="Clear cart"
                             icon="heroicons:trash" @click="clearAll" />
                     </div>

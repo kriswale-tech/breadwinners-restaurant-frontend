@@ -12,10 +12,15 @@ const { toggleCart } = inject<{ toggleCart: () => void }>('cartOpen')!
   >
         <Icon name="heroicons:shopping-cart" class="size-8 text-white" />
 
-        <!-- Cart count -->
-        <span v-if="cartStore.totalItems > 0"
-            class="absolute top-0 right-0 translate-x-1 -translate-y-1 bg-red-600 text-white rounded-full h-6 min-w-6 px-1 py-0.5 flex items-center justify-center text-sm border border-white font-bold">{{
-                cartStore.totalItems }}</span>
+        <!-- Cart count - ClientOnly to prevent hydration mismatch -->
+        <ClientOnly>
+            <span
+                v-if="cartStore.totalItems > 0"
+                class="absolute top-0 right-0 translate-x-1 -translate-y-1 bg-red-600 text-white rounded-full h-6 min-w-6 px-1 py-0.5 flex items-center justify-center text-sm border border-white font-bold"
+            >
+                {{ cartStore.totalItems }}
+            </span>
+        </ClientOnly>
     </button>
 </template>
 

@@ -50,4 +50,9 @@ export const useCartStore = defineStore('cart', () => {
         totalItems,
         totalPrice
     }
-})
+},
+    {
+        persist: true
+    }
+
+)

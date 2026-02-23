@@ -9,6 +9,8 @@ export default defineNuxtConfig({
     '@nuxt/eslint',
     '@nuxt/fonts',
     '@pinia/nuxt',
+    'pinia-plugin-persistedstate/nuxt',
+    '@nuxtjs/leaflet',
   ],
   css: ['~/assets/css/main.css'],
   ui: {
@@ -17,5 +19,14 @@ export default defineNuxtConfig({
   fonts: {},
   devServer: {
     port: 3002,
+  },
+  // piniaPluginPersistedstate: {
+  //   storage: 'localStorage'
+  // },
+  routeRules: {
+    // Set layout for specific route
+    '/admin': { appLayout: 'admin' },
+    // Set layout for multiple routes
+    '/admin/auth/**': { appLayout: false },
   },
 })
