@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Product } from '~/data/products'
+import type { Product, ProductStatus } from '~/data/products'
 
 const props = withDefaults(
     defineProps<{
@@ -20,6 +20,7 @@ const name = ref('')
 const description = ref('')
 const price = ref<number>(0)
 const category = ref('')
+const isActive = ref(true)
 const imageFile = ref<File | undefined>(undefined)
 const imageUrl = ref('') // existing image URL when editing
 const objectUrl = ref<string | null>(null) // for revoking preview
@@ -37,6 +38,7 @@ function resetForm() {
     description.value = ''
     price.value = 0
     category.value = ''
+    isActive.value = true
     imageFile.value = undefined
     imageUrl.value = ''
     revokePreview()
@@ -60,6 +62,7 @@ watch(
                 category.value = props.product.category ?? ''
                 imageUrl.value = props.product.image ?? ''
                 imageFile.value = undefined
+                isActive.value = props.product.status !== 'disabled'
                 revokePreview()
             } else {
                 resetForm()
@@ -107,6 +110,7 @@ async function handleSubmit() {
         price: price.value,
         category: category.value || undefined,
         image: image || undefined,
+        status: (isActive.value ? 'active' : 'disabled') as ProductStatus,
     })
     emit('close', false)
 }
@@ -159,6 +163,10 @@ function close() {
                             placeholder="Select category" size="lg" class="w-full" />
                     </UFormField>
                 </div>
+
+                <UFormField label="Status" name="status" description="Active products are visible; disabled are hidden.">
+                    <USwitch v-model="isActive" :label="isActive ? 'Active' : 'Disabled'" />
+                </UFormField>
             </form>
         </template>
         <template #footer>

@@ -16,6 +16,22 @@ export interface Category {
     description?: string
 }
 
+export interface ProductPackageItem {
+    id: number
+    product: Product
+    quantity: number
+}
+
+export interface ProductPackage {
+    id: number
+    name: string
+    image?: string
+    description?: string,
+    items: ProductPackageItem[]
+    price: number | string
+    status?: ProductStatus
+}
+
 export const products: Product[] = [
     {
         id: 1,
@@ -60,4 +76,25 @@ export const categories = ref<Category[]>([
     { id: 2, name: 'Brioche', description: 'Rich, slightly sweet brioche-style breads.' },
     { id: 3, name: 'Whole wheat', description: '100% whole wheat and hearty loaves.' },
     { id: 4, name: 'Rolls', description: 'Rolls and mini loaves.' },
+])
+
+export const packages = ref<ProductPackage[]>([
+    {
+        id: 1, name: 'Bread Package', description: 'A package of 3 loaves of bread.', items: [
+            { id: 1, product: products[0]!, quantity: 3 },
+            { id: 2, product: products[1]!, quantity: 3 },
+            { id: 3, product: products[2]!, quantity: 3 },
+        ], price: 30.00, status: 'active'
+    },
+    {
+        id: 2, name: 'Brioche Package', description: 'A package of 3 brioche breads.', items: [
+            { id: 1, product: products[1]!, quantity: 3 },
+            { id: 2, product: products[2]!, quantity: 3 },
+        ], price: 30.00, status: 'active'
+    },
+    {
+        id: 3, name: 'Whole Wheat Package', description: 'A package of 3 whole wheat loaves.', items: [
+            { id: 3, product: products[2]!, quantity: 3 },
+        ], price: 30.00, status: 'active'
+    },
 ])
