@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const route = useRoute()
+
 const tabs = [
   {
     label: 'Products',
@@ -18,6 +20,11 @@ const tabs = [
 ]
 
 const activeTab = ref('')
+
+watch(route, () => {
+  activeTab.value = route.path.split('/').pop() || ''
+}, { immediate: true })
+
 
 function onTabChange(value: string | number) {
   activeTab.value = value as string

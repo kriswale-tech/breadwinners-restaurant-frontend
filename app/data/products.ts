@@ -10,6 +10,12 @@ export interface Product {
     status?: ProductStatus
 }
 
+export interface Category {
+    id: number
+    name: string
+    description?: string
+}
+
 export const products: Product[] = [
     {
         id: 1,
@@ -48,3 +54,10 @@ export const products: Product[] = [
         status: 'disabled',
     }
 ]
+
+export const categories = ref<Category[]>([
+    { id: 1, name: 'Loaves', description: 'Artisan and classic loaves.' },
+    { id: 2, name: 'Brioche', description: 'Rich, slightly sweet brioche-style breads.' },
+    { id: 3, name: 'Whole wheat', description: '100% whole wheat and hearty loaves.' },
+    { id: 4, name: 'Rolls', description: 'Rolls and mini loaves.' },
+])
