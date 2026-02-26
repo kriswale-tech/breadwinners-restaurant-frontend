@@ -1,9 +1,13 @@
+export type ProductStatus = 'active' | 'disabled'
+
 export interface Product {
     id: number
     image?: string
     name: string
     description?: string
     price: number | string
+    category?: string
+    status?: ProductStatus
 }
 
 export const products: Product[] = [
@@ -13,6 +17,8 @@ export const products: Product[] = [
         name: 'Bread Winner',
         description: 'Freshly baked artisan loaf with a crisp crust and soft, airy crumb. Perfect with butter or jam.',
         price: 10.00,
+        category: 'Loaves',
+        status: 'active',
     },
     {
         id: 2,
@@ -20,6 +26,8 @@ export const products: Product[] = [
         name: 'Bread Winner',
         description: 'Rich brioche-style bread, slightly sweet and ideal for French toast or morning pastries.',
         price: 10.00,
+        category: 'Brioche',
+        status: 'active',
     },
     {
         id: 3,
@@ -27,6 +35,8 @@ export const products: Product[] = [
         name: 'Bread Winner',
         description: '100% whole wheat loaf, hearty and nutritious. Great for sandwiches and toast.',
         price: 10.00,
+        category: 'Whole wheat',
+        status: 'active',
     },
     {
         id: 4,
@@ -34,5 +44,7 @@ export const products: Product[] = [
         name: 'Bread Winner',
         description: 'Assorted rolls and mini loaves, perfect for sharing at the table or as a side.',
         price: 10.00,
+        category: 'Rolls',
+        status: 'disabled',
     }
 ]

@@ -12,13 +12,18 @@ const breadcrumbItems = computed(() => {
   const items: { label: string; to?: string; icon?: string }[] = [
     { label: 'Admin', to: '/admin', icon: 'i-lucide-layout-dashboard' },
   ]
-  if (pathSegments.length > 1) {
-    const last = pathSegments.at(-1)
-    if (last) {
-      const label = last.charAt(0).toUpperCase() + last.slice(1).replace(/-/g, ' ')
-      items.push({ label })
-    }
+
+  // Build a breadcrumb entry for each segment after /admin
+  for (let i = 1; i < pathSegments.length; i++) {
+    const segment = pathSegments[i]
+    if (!segment) continue
+
+    const to = '/' + pathSegments.slice(0, i + 1).join('/')
+    const label = segment.charAt(0).toUpperCase() + segment.slice(1).replace(/-/g, ' ')
+
+    items.push({ label, to })
   }
+
   return items
 })
 

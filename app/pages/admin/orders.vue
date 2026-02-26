@@ -77,7 +77,11 @@ function handleUpdateStatus(payload: { orderId: string; status: OrderStatus }) {
     <p class="text-neutral-600 dark:text-neutral-400">
       Manage and view orders.
     </p>
+
+    <!-- statistics -->
     <AdminOrdersStatistics :orders="filteredOrders" />
+
+    <!-- filters -->
     <div class="flex flex-wrap items-end gap-3 mt-10! mb-5!">
       <UInput v-model="searchQuery" placeholder="Search by Order ID or phone..." class="min-w-0 flex-1 sm:max-w-xs"
         icon="i-lucide-search" />
@@ -92,16 +96,13 @@ function handleUpdateStatus(payload: { orderId: string; status: OrderStatus }) {
           class="w-full sm:w-48" />
       </div>
     </div>
-    <AdminOrdersTableComponent
-      :data="filteredOrders"
-      @update-status="handleUpdateStatus"
-      @select-order="openOrderDetails"
-    />
-    <AdminOrdersOrderDetailsModal
-      v-model:open="modalOpen"
-      :order-id="selectedOrderId"
-      :orders="orders"
-      @update-status="handleUpdateStatus"
-    />
+
+    <!-- table -->
+    <AdminOrdersTableComponent :data="filteredOrders" @update-status="handleUpdateStatus"
+      @select-order="openOrderDetails" />
+
+    <!-- order details modal -->
+    <AdminOrdersOrderDetailsModal v-model:open="modalOpen" :order-id="selectedOrderId" :orders="orders"
+      @update-status="handleUpdateStatus" />
   </div>
 </template>
