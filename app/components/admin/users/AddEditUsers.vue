@@ -19,6 +19,7 @@ const isEdit = computed(() => !!props.user)
 const firstName = ref('')
 const lastName = ref('')
 const role = ref<UserRole>('staff')
+const shop = ref<string | undefined>(undefined)
 const phoneNumber = ref('')
 const address = ref('')
 const bio = ref('')
@@ -31,6 +32,19 @@ const roleOptions: { label: string; value: UserRole }[] = [
     { label: 'Staff', value: 'staff' },
 ]
 
+const shopOptions: { label: string; value: string }[] = [
+    { label: 'BreadWinners', value: 'breadwinners' },
+    { label: 'Restaurant', value: 'restaurant' },
+]
+
+const isShopDisabled = computed(() => role.value === 'admin')
+
+watch(role, (newRole) => {
+    if (newRole === 'admin') {
+        shop.value = undefined
+    }
+})
+
 function revokePreview() {
     if (objectUrl.value) {
         URL.revokeObjectURL(objectUrl.value)
@@ -42,6 +56,7 @@ function resetForm() {
     firstName.value = ''
     lastName.value = ''
     role.value = 'staff'
+    shop.value = undefined
     phoneNumber.value = ''
     address.value = ''
     bio.value = ''
@@ -58,6 +73,7 @@ watch(
                 firstName.value = props.user.firstName
                 lastName.value = props.user.lastName
                 role.value = props.user.role
+                shop.value = props.user.shop
                 phoneNumber.value = props.user.phoneNumber
                 address.value = props.user.address ?? ''
                 bio.value = props.user.bio ?? ''
@@ -108,6 +124,7 @@ async function handleSubmit() {
         firstName: firstName.value,
         lastName: lastName.value,
         role: role.value,
+        shop: shop.value,
         phoneNumber: phoneNumber.value,
         address: address.value || undefined,
         bio: bio.value || undefined,
@@ -144,16 +161,30 @@ function close() {
                     </UFormField>
                 </div>
 
-                <UFormField label="Role" name="role" required>
-                    <USelect
-                        v-model="role"
-                        :items="roleOptions"
-                        value-key="value"
-                        placeholder="Select role"
-                        size="lg"
-                        class="w-full sm:w-60"
-                    />
-                </UFormField>
+                <div class="grid gap-5 sm:grid-cols-2">
+                    <UFormField label="Role" name="role" required>
+                        <USelect
+                            v-model="role"
+                            :items="roleOptions"
+                            value-key="value"
+                            placeholder="Select role"
+                            size="lg"
+                            class="w-full"
+                        />
+                    </UFormField>
+
+                    <UFormField label="Shop" name="shop">
+                        <USelect
+                            v-model="shop"
+                            :items="shopOptions"
+                            value-key="value"
+                            placeholder="Select shop"
+                            size="lg"
+                            class="w-full"
+                            :disabled="isShopDisabled"
+                        />
+                    </UFormField>
+                </div>
 
                 <UFormField
                     label="Phone number"

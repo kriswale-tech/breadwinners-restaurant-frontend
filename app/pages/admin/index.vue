@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const shopStore = useShopStore()
+
 // Placeholder stats – replace with real data later
 const todayOrders = 0
 const pendingOrders = 0
@@ -15,14 +17,15 @@ const quickLinks = [
 <template>
   <div class="space-y-8">
     <h1 class="text-2xl font-semibold text-neutral-900 dark:text-white">
-      Dashboard
+      Dashboard - {{ shopStore.selectedShop?.label }}
     </h1>
 
     <!-- Stats -->
     <div class="grid gap-4 sm:grid-cols-3">
       <UCard class="border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center gap-3">
-          <div class="flex size-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-amber-100 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
             <Icon name="i-lucide-shopping-bag" class="size-5" />
           </div>
           <div>
@@ -37,7 +40,8 @@ const quickLinks = [
       </UCard>
       <UCard class="border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center gap-3">
-          <div class="flex size-10 items-center justify-center rounded-lg bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-orange-100 text-orange-600 dark:bg-orange-900/30 dark:text-orange-400">
             <Icon name="i-lucide-clock" class="size-5" />
           </div>
           <div>
@@ -52,7 +56,8 @@ const quickLinks = [
       </UCard>
       <UCard class="border border-neutral-200 dark:border-neutral-700">
         <div class="flex items-center gap-3">
-          <div class="flex size-10 items-center justify-center rounded-lg bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
+          <div
+            class="flex size-10 items-center justify-center rounded-lg bg-red-100 text-red-600 dark:bg-red-900/30 dark:text-red-400">
             <Icon name="i-lucide-alert-triangle" class="size-5" />
           </div>
           <div>
@@ -73,16 +78,8 @@ const quickLinks = [
         Quick actions
       </h2>
       <div class="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-        <UButton
-          v-for="link in quickLinks"
-          :key="link.label"
-          :to="link.to"
-          :color="link.color"
-          variant="solid"
-          size="xl"
-          :icon="link.icon"
-          class="min-h-14 justify-start text-base font-medium"
-        >
+        <UButton v-for="link in quickLinks" :key="link.label" :to="link.to" :color="link.color" variant="solid"
+          size="xl" :icon="link.icon" class="min-h-14 justify-start text-base font-medium">
           {{ link.label }}
         </UButton>
       </div>

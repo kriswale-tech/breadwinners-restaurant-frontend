@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { type User, type UserRole, users } from '~/data/users'
+import { type User, users } from '~/data/users'
 
 const UBadge = resolveComponent('UBadge')
 const UButton = resolveComponent('UButton')
@@ -10,11 +10,6 @@ const emit = defineEmits<{
     edit: [user: User]
     delete: [user: User]
 }>()
-
-const roleColor: Record<UserRole, 'primary' | 'neutral'> = {
-    admin: 'primary',
-    staff: 'neutral',
-}
 
 function formatLastLogin(value?: string): string {
     if (!value) return 'Never'
@@ -89,12 +84,20 @@ const columns: TableColumn<User>[] = [
         meta: { class: { td: 'text-sm text-neutral-900 dark:text-neutral-100' } },
     },
     {
-        id: 'role',
-        header: 'Role',
+        id: 'shop',
+        header: 'Shop',
         cell: ({ row }) => {
-            const role = row.original.role
-            const color = roleColor[role]
-            return h(UBadge, { color, variant: 'soft', class: 'capitalize' }, () => role)
+            const shop = row.original.shop
+            if (!shop) {
+                return '—'
+            }
+            const label =
+                shop === 'breadwinners'
+                    ? 'BreadWinners'
+                    : shop === 'restaurant'
+                        ? 'Restaurant'
+                        : shop
+            return h(UBadge, { variant: 'soft' }, () => label)
         },
     },
     {

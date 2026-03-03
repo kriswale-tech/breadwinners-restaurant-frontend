@@ -1,11 +1,5 @@
 <script setup lang="ts">
-const loginStore = useLoginStore()
 const route = useRoute()
-
-function handleLogout() {
-  loginStore.logout()
-  navigateTo('/admin/auth/login')
-}
 
 const breadcrumbItems = computed(() => {
   const pathSegments = route.path.split('/').filter(Boolean)
@@ -26,25 +20,12 @@ const breadcrumbItems = computed(() => {
 
   return items
 })
-
-const dropdownItems = [
-  [
-    {
-      label: 'Logout',
-      icon: 'i-lucide-log-out',
-      onSelect: handleLogout,
-      color: 'error',
-    },
-  ],
-]
 </script>
 
 <template>
   <header
     class="flex h-14 shrink-0 items-center justify-between border-b border-neutral-200 px-4 dark:border-neutral-800">
     <UBreadcrumb :items="breadcrumbItems" />
-    <UDropdownMenu :items="dropdownItems">
-      <UAvatar size="xl" alt="Admin" icon="i-lucide-user" class="cursor-pointer" />
-    </UDropdownMenu>
+    <AdminShopSelector />
   </header>
 </template>

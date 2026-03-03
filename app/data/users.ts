@@ -5,6 +5,7 @@ export interface User {
     firstName: string
     lastName: string
     role: UserRole
+    shop?: string
     phoneNumber: string
     address?: string
     bio?: string
@@ -18,6 +19,7 @@ export const users = ref<User[]>([
         firstName: 'Ama',
         lastName: 'Mensah',
         role: 'admin',
+        shop: undefined,
         phoneNumber: '0551112233',
         address: 'Accra, Ghana',
         bio: 'Store manager at Breadwinners Main.',
@@ -29,6 +31,7 @@ export const users = ref<User[]>([
         firstName: 'John',
         lastName: 'Smith',
         role: 'staff',
+        shop: 'breadwinners',
         phoneNumber: '0249876543',
         address: 'Tema, Ghana',
         bio: 'Morning shift staff.',
@@ -40,6 +43,7 @@ export const users = ref<User[]>([
         firstName: 'Abena',
         lastName: 'Osei',
         role: 'staff',
+        shop: 'restaurant',
         phoneNumber: '0203334455',
         bio: 'Part-time cashier.',
         avatar: 'https://api.dicebear.com/9.x/initials/svg?seed=Abena%20Osei',
