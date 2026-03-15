@@ -1,55 +1,69 @@
 <script setup lang="ts">
-import type { Category } from '~/data/products'
+import type { ProductCategory } from '~/types/products'
 
 const props = withDefaults(
-    defineProps<{
-        open: boolean
-        category?: Category | null
-    }>(),
-    { category: null }
+  defineProps<{
+    open: boolean
+    category?: ProductCategory | null
+  }>(),
+  { category: null },
 )
 
 const emit = defineEmits<{
-    'close': [value: boolean]
-    save: [payload: Partial<Category> & { name: string }]
+  close: [value: boolean]
 }>()
 
+const productStore = useProductStore()
+
 const isEdit = computed(() => !!props.category)
+const submitting = ref(false)
 
 const name = ref('')
 const description = ref('')
 
 function resetForm() {
-    name.value = ''
-    description.value = ''
+  name.value = ''
+  description.value = ''
 }
 
 watch(
-    () => [props.open, props.category],
-    () => {
-        if (props.open) {
-            if (props.category) {
-                name.value = props.category.name
-                description.value = props.category.description ?? ''
-            } else {
-                resetForm()
-            }
-        }
-    },
-    { immediate: true }
+  () => [props.open, props.category],
+  () => {
+    if (props.open) {
+      if (props.category) {
+        name.value = props.category.name
+        description.value = props.category.description
+      }
+      else {
+        resetForm()
+      }
+    }
+  },
+  { immediate: true },
 )
 
-function handleSubmit() {
-    emit('save', {
-        ...(props.category?.id != null && { id: props.category.id }),
-        name: name.value,
-        description: description.value || undefined,
-    })
-    emit('close', false)
+async function handleSubmit() {
+  submitting.value = true
+  const payload = {
+    name: name.value,
+    description: description.value || undefined,
+  }
+
+  try {
+    if (isEdit.value && props.category)
+      await productStore.updateCategory(props.category.id, payload)
+    else
+      await productStore.createCategory(payload)
+
+    close()
+  }
+  finally {
+    submitting.value = false
+  }
 }
 
 function close() {
-    emit('close', false)
+  emit('close', false)
 }
 </script>
 
@@ -89,7 +103,8 @@ function close() {
                     color="success"
                     label="Save"
                     class="ml-auto"
-                    :disabled="!name"
+                    :loading="submitting"
+                    :disabled="!name || submitting"
                 />
             </div>
         </template>

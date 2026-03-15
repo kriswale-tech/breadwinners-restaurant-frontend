@@ -1,31 +1,22 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { ProductPackage, ProductStatus } from '~/data/products'
+import type { ProductPackage } from '~/types/products'
 
 const UBadge = resolveComponent('UBadge')
 const UButton = resolveComponent('UButton')
+const productStore = useProductStore()
 
-const props = withDefaults(
-    defineProps<{
-        packages?: ProductPackage[]
-    }>(),
-    { packages: () => [] },
-)
+const packages = computed(() => productStore.packages)
 
 const emit = defineEmits<{
     edit: [pkg: ProductPackage]
     delete: [pkg: ProductPackage]
 }>()
 
-const statusColor: Record<ProductStatus, 'success' | 'neutral'> = {
-    active: 'success',
-    disabled: 'neutral',
-}
-
 function formatPackageInfo(items: ProductPackage['items']): string {
     if (!items?.length) return '—'
-    return items.map((i) => `${i.product.name} x ${i.quantity}`).join(', ')
+    return items.map((i) => `${i.product_name ?? ''} x ${i.quantity}`).join(', ')
 }
 
 const columns: TableColumn<ProductPackage>[] = [
@@ -33,26 +24,19 @@ const columns: TableColumn<ProductPackage>[] = [
         accessorKey: 'name',
         header: 'Package',
         cell: ({ row }) => {
-            const image = row.original.image
             const name = row.original.name
             return h(
                 'div',
                 { class: 'flex items-center gap-3' },
                 [
-                    image
-                        ? h('img', {
-                            src: image,
-                            alt: name,
-                            class: 'h-10 w-10 rounded-md object-cover',
-                        })
-                        : h(
-                            'div',
-                            {
-                                class:
-                                    'flex h-10 w-10 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500',
-                            },
-                            [h(resolveComponent('Icon'), { name: 'i-lucide-package', class: 'size-5' })],
-                        ),
+                    h(
+                        'div',
+                        {
+                            class:
+                                'flex h-10 w-10 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500',
+                        },
+                        [h(resolveComponent('Icon'), { name: 'i-lucide-package', class: 'size-5' })],
+                    ),
                     h('div', { class: 'min-w-0' }, [
                         h('p', { class: 'text-sm font-medium text-neutral-900 dark:text-white truncate' }, name),
                     ]),
@@ -81,12 +65,13 @@ const columns: TableColumn<ProductPackage>[] = [
             ),
     },
     {
-        accessorKey: 'status',
+        id: 'status',
         header: 'Status',
         cell: ({ row }) => {
-            const status = (row.getValue('status') as ProductStatus) || 'active'
-            const color = statusColor[status]
-            return h(UBadge, { color, variant: 'subtle', class: 'capitalize' }, () => status)
+            const isActive = row.original.is_active
+            const color = isActive ? 'success' : 'neutral'
+            const label = isActive ? 'Active' : 'Disabled'
+            return h(UBadge, { color, variant: 'subtle', class: 'capitalize' }, () => label)
         },
     },
     {

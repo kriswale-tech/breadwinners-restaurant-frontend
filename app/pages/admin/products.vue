@@ -1,6 +1,6 @@
 <script setup lang="ts">
 const route = useRoute()
-
+const productStore = useProductStore()
 const tabs = [
   {
     label: 'Products',
@@ -30,6 +30,13 @@ function onTabChange(value: string | number) {
   activeTab.value = value as string
   navigateTo(`/admin/products/${value}`)
 }
+
+onMounted(async () => {
+  await callOnce('getProducts', () => productStore.getProducts())
+  await callOnce('getCategories', () => productStore.getCategories())
+  await callOnce('getPackages', () => productStore.getPackages())
+  await callOnce('getProductStatistics', () => productStore.getProductStatistics())
+})
 </script>
 
 <template>

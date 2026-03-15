@@ -1,20 +1,18 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { type Product, type ProductStatus, products } from '~/data/products'
+import type { Product } from '~/types/products'
 
 const UBadge = resolveComponent('UBadge')
 const UButton = resolveComponent('UButton')
+const productStore = useProductStore()
+
+const products = computed(() => productStore.products)
 
 const emit = defineEmits<{
   edit: [product: Product]
   delete: [product: Product]
 }>()
-
-const statusColor: Record<ProductStatus, 'success' | 'neutral'> = {
-    active: 'success',
-    disabled: 'neutral',
-}
 
 const columns: TableColumn<Product>[] = [
     {
@@ -55,7 +53,7 @@ const columns: TableColumn<Product>[] = [
         meta: { class: { td: 'max-w-xs truncate text-sm text-neutral-600 dark:text-neutral-400' } },
     },
     {
-        accessorKey: 'category',
+        accessorKey: 'category_name',
         header: 'Category',
     },
     {
@@ -68,12 +66,13 @@ const columns: TableColumn<Product>[] = [
             ),
     },
     {
-        accessorKey: 'status',
+        id: 'status',
         header: 'Status',
         cell: ({ row }) => {
-            const status = (row.getValue('status') as ProductStatus) || 'active'
-            const color = statusColor[status]
-            return h(UBadge, { color, variant: 'subtle', class: 'capitalize' }, () => status)
+            const isActive = row.original.is_active
+            const color = isActive ? 'success' : 'neutral'
+            const label = isActive ? 'Active' : 'Disabled'
+            return h(UBadge, { color, variant: 'subtle', class: 'capitalize' }, () => label)
         },
     },
     {

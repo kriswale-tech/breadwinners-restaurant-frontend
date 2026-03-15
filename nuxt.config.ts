@@ -11,6 +11,7 @@ export default defineNuxtConfig({
     '@pinia/nuxt',
     'pinia-plugin-persistedstate/nuxt',
     '@nuxtjs/leaflet',
+    'dayjs-nuxt',
   ],
   css: ['~/assets/css/main.css'],
   ui: {
@@ -23,6 +24,11 @@ export default defineNuxtConfig({
   // piniaPluginPersistedstate: {
   //   storage: 'localStorage'
   // },
+  runtimeConfig: {
+    public: {
+      apiBase: 'http://localhost:8000',
+    },
+  },
   routeRules: {
     '/admin/auth/**': { appLayout: 'auth', ssr: false },
     '/admin': { appLayout: 'admin' },

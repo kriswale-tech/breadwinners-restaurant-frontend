@@ -1,123 +1,129 @@
 <script setup lang="ts">
-import type { Product, ProductStatus } from '~/data/products'
+import type { Product } from '~/types/products'
 
 const props = withDefaults(
-    defineProps<{
-        open: boolean
-        product?: Product | null
-    }>(),
-    { product: null }
+  defineProps<{
+    open: boolean
+    product?: Product | null
+  }>(),
+  { product: null },
 )
 
 const emit = defineEmits<{
-    'close': [value: boolean]
-    save: [payload: Partial<Product> & { name: string; price: number }]
+  close: [value: boolean]
 }>()
 
+const productStore = useProductStore()
+const config = useRuntimeConfig()
+
 const isEdit = computed(() => !!props.product)
+const submitting = ref(false)
 
 const name = ref('')
 const description = ref('')
-const price = ref<number>(0)
-const category = ref('')
+const price = ref<string>('0')
+const categoryId = ref<number | undefined>(undefined)
 const isActive = ref(true)
-const imageFile = ref<File | undefined>(undefined)
-const imageUrl = ref('') // existing image URL when editing
-const objectUrl = ref<string | null>(null) // for revoking preview
+const imageFile = ref<File | null>(null)
+const imageUrl = ref('')
+const objectUrl = ref<string | null>(null)
 
-const categoryOptions = [
-    { label: 'Loaves', value: 'Loaves' },
-    { label: 'Brioche', value: 'Brioche' },
-    { label: 'Whole wheat', value: 'Whole wheat' },
-    { label: 'Rolls', value: 'Rolls' },
-    { label: 'Pastries', value: 'Pastries' },
-]
-
-function resetForm() {
-    name.value = ''
-    description.value = ''
-    price.value = 0
-    category.value = ''
-    isActive.value = true
-    imageFile.value = undefined
-    imageUrl.value = ''
-    revokePreview()
-}
+const categoryOptions = computed(() =>
+  productStore.categories.map((c) => ({ label: c.name, value: c.id })),
+)
 
 function revokePreview() {
-    if (objectUrl.value) {
-        URL.revokeObjectURL(objectUrl.value)
-        objectUrl.value = null
-    }
+  if (objectUrl.value) {
+    URL.revokeObjectURL(objectUrl.value)
+    objectUrl.value = null
+  }
+}
+
+function resetForm() {
+  name.value = ''
+  description.value = ''
+  price.value = '0'
+  categoryId.value = undefined
+  isActive.value = true
+  imageFile.value = null
+  imageUrl.value = ''
+  revokePreview()
 }
 
 watch(
-    () => [props.open, props.product],
-    () => {
-        if (props.open) {
-            if (props.product) {
-                name.value = props.product.name
-                description.value = props.product.description ?? ''
-                price.value = Number(props.product.price) || 0
-                category.value = props.product.category ?? ''
-                imageUrl.value = props.product.image ?? ''
-                imageFile.value = undefined
-                isActive.value = props.product.status !== 'disabled'
-                revokePreview()
-            } else {
-                resetForm()
-            }
-        }
-    },
-    { immediate: true }
+  () => [props.open, props.product],
+  () => {
+    if (props.open) {
+      if (props.product) {
+        name.value = props.product.name
+        description.value = props.product.description
+        price.value = props.product.price
+        categoryId.value = props.product.category_id ?? undefined
+        isActive.value = props.product.is_active
+        imageUrl.value = props.product.image
+          ? new URL(props.product.image, String(config.public.apiBase)).toString()
+          : ''
+        imageFile.value = null
+        revokePreview()
+      }
+      else {
+        resetForm()
+      }
+    }
+  },
+  { immediate: true },
 )
 
-watch(imageFile, (file) => {
-    revokePreview()
-    if (file) {
-        objectUrl.value = URL.createObjectURL(file)
-    }
+watch(imageFile, (file: File | null) => {
+  revokePreview()
+  if (file) {
+    objectUrl.value = URL.createObjectURL(file)
+  }
 })
 
-const previewUrl = computed(() => {
-    if (objectUrl.value) return objectUrl.value
-    return imageUrl.value || null
+const previewUrl = computed<string | null>(() => {
+  return (objectUrl.value || imageUrl.value || null) as string | null
 })
 
-onUnmounted(() => {
-    revokePreview()
-})
-
-async function fileToDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-    })
+function buildFormData(): FormData {
+  const fd = new FormData()
+  fd.append('name', name.value)
+  fd.append('description', description.value)
+  fd.append('price', price.value)
+  fd.append('is_active', String(isActive.value))
+  if (categoryId.value != null)
+    fd.append('category_id', String(categoryId.value))
+  if (imageFile.value)
+    fd.append('image', imageFile.value)
+  return fd
 }
 
 async function handleSubmit() {
-    let image = imageUrl.value
-    if (imageFile.value) {
-        image = await fileToDataUrl(imageFile.value)
-    }
+  submitting.value = true
 
-    emit('save', {
-        ...(props.product?.id != null && { id: props.product.id }),
-        name: name.value,
-        description: description.value || undefined,
-        price: price.value,
-        category: category.value || undefined,
-        image: image || undefined,
-        status: (isActive.value ? 'active' : 'disabled') as ProductStatus,
-    })
-    emit('close', false)
+  try {
+    const formData = buildFormData()
+
+    if (isEdit.value && props.product)
+      await productStore.updateProduct(props.product.id, formData)
+    else
+      await productStore.createProduct(formData)
+
+    close()
+  }
+  catch (error) {
+    console.error(error)
+  }
+  finally {
+    submitting.value = false
+  }
 }
 
 function close() {
-    emit('close', false)
+  emit('close', false)
 }
+
+onUnmounted(revokePreview)
 </script>
 
 <template>
@@ -154,12 +160,12 @@ function close() {
 
                 <div class="grid gap-5 sm:grid-cols-2">
                     <UFormField label="Price (GHS)" name="price" required>
-                        <UInput v-model.number="price" type="number" step="0.01" min="0" placeholder="0.00" size="lg"
+                        <UInput v-model="price" type="number" step="0.01" min="0" placeholder="0.00" size="lg"
                             required class="w-full" />
                     </UFormField>
 
                     <UFormField label="Category" name="category">
-                        <USelect v-model="category" :items="categoryOptions" value-key="value"
+                        <USelect v-model="categoryId" :items="categoryOptions" value-key="value"
                             placeholder="Select category" size="lg" class="w-full" />
                     </UFormField>
                 </div>
@@ -173,7 +179,7 @@ function close() {
             <div class="flex justify-end gap-2 w-full">
                 <UButton color="neutral" variant="outline" label="Cancel" @click="close" />
                 <UButton type="submit" form="add-edit-product-form" color="success" label="Save" class="ml-auto"
-                    :disabled="!name || (typeof price !== 'number' && Number.isNaN(Number(price)))" />
+                    :loading="submitting" :disabled="!name || !price || submitting" />
             </div>
         </template>
     </UModal>

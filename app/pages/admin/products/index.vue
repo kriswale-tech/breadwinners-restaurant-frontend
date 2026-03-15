@@ -1,26 +1,24 @@
 <script setup lang="ts">
-import type { Product } from '~/data/products'
+import type { Product } from '~/types/products'
+
+const productStore = useProductStore()
 
 const searchQuery = ref('')
-const categoryFilter = ref('')
-const categoryOptions = [
-    { label: 'All', value: 'all' },
-    { label: 'Bread', value: 'bread' },
-    { label: 'Cake', value: 'cake' },
-    { label: 'Pastry', value: 'pastry' },
-]
+const categoryFilter = ref<number | 'all'>('all')
 
 const selectedProduct = ref<Product | null>(null)
-
-function addProduct() {
-    openAddEditProductModal()
-}
 
 const showAddEditProductModal = ref(false)
 const showDeleteProductModal = ref(false)
 
-function openAddEditProductModal(product?: Product) {
-    selectedProduct.value = product ?? null
+
+const categoryOptions = computed(() => {
+    const opts = productStore.categories.map(c => ({ label: c.name, value: c.id }))
+    return [{ label: 'All', value: 'all' as const }, ...opts]
+})
+
+function addProduct() {
+    selectedProduct.value = null
     showAddEditProductModal.value = true
 }
 
@@ -30,11 +28,13 @@ function closeAddEditProductModal() {
 }
 
 function editProduct(product: Product) {
-    openAddEditProductModal(product)
+    selectedProduct.value = product
+    showAddEditProductModal.value = true
 }
 
-function deleteProduct() {
-    console.log('deleteProduct', selectedProduct.value)
+function openDeleteProductModal(product: Product) {
+    selectedProduct.value = product
+    showDeleteProductModal.value = true
 }
 
 function closeDeleteProductModal() {
@@ -42,9 +42,10 @@ function closeDeleteProductModal() {
     selectedProduct.value = null
 }
 
-function openDeleteProductModal(product: Product) {
-    selectedProduct.value = product
-    showDeleteProductModal.value = true
+async function deleteProduct() {
+    if (!selectedProduct.value) return
+    await productStore.deleteProduct(selectedProduct.value.id)
+    closeDeleteProductModal()
 }
 </script>
 

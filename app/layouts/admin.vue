@@ -1,7 +1,7 @@
 <script setup lang="ts">
-const loginStore = useLoginStore()
+const authStore = useAuthStore()
 
-if (!loginStore.isLoggedIn) {
+if (!authStore.isLoggedIn) {
     await navigateTo('/admin/auth/login')
 }
 

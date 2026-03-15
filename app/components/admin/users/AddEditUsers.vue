@@ -1,28 +1,32 @@
 <script setup lang="ts">
-import type { User, UserRole } from '~/data/users'
+import type { UserCreateUpdatePayload, UsersList, UserRole } from '~/types'
+import type { ErrorResponse } from '~/types/error'
 
 const props = withDefaults(
     defineProps<{
         open: boolean
-        user?: User | null
+        user?: UsersList | null
     }>(),
     { user: null },
 )
 
 const emit = defineEmits<{
-    'close': [value: boolean]
-    save: [payload: Partial<User> & { firstName: string; lastName: string; phoneNumber: string; role: UserRole }]
+    close: [value: boolean]
 }>()
 
+const usersStore = useUsersStore()
+const shopStore = useShopStore()
+const toast = useToast()
+
 const isEdit = computed(() => !!props.user)
+const submitting = ref(false)
 
 const firstName = ref('')
 const lastName = ref('')
 const role = ref<UserRole>('staff')
-const shop = ref<string | undefined>(undefined)
+const shopId = ref<number | undefined>(undefined)
 const phoneNumber = ref('')
 const address = ref('')
-const bio = ref('')
 const avatarFile = ref<File | undefined>(undefined)
 const avatarUrl = ref('')
 const objectUrl = ref<string | null>(null)
@@ -32,16 +36,15 @@ const roleOptions: { label: string; value: UserRole }[] = [
     { label: 'Staff', value: 'staff' },
 ]
 
-const shopOptions: { label: string; value: string }[] = [
-    { label: 'BreadWinners', value: 'breadwinners' },
-    { label: 'Restaurant', value: 'restaurant' },
-]
+const shopOptions = computed(() =>
+    shopStore.shops.map((s) => ({ label: s.name, value: s.id })),
+)
 
 const isShopDisabled = computed(() => role.value === 'admin')
 
 watch(role, (newRole) => {
     if (newRole === 'admin') {
-        shop.value = undefined
+        shopId.value = undefined
     }
 })
 
@@ -56,37 +59,13 @@ function resetForm() {
     firstName.value = ''
     lastName.value = ''
     role.value = 'staff'
-    shop.value = undefined
+    shopId.value = undefined
     phoneNumber.value = ''
     address.value = ''
-    bio.value = ''
     avatarFile.value = undefined
     avatarUrl.value = ''
     revokePreview()
 }
-
-watch(
-    () => [props.open, props.user],
-    () => {
-        if (props.open) {
-            if (props.user) {
-                firstName.value = props.user.firstName
-                lastName.value = props.user.lastName
-                role.value = props.user.role
-                shop.value = props.user.shop
-                phoneNumber.value = props.user.phoneNumber
-                address.value = props.user.address ?? ''
-                bio.value = props.user.bio ?? ''
-                avatarUrl.value = props.user.avatar ?? ''
-                avatarFile.value = undefined
-                revokePreview()
-            } else {
-                resetForm()
-            }
-        }
-    },
-    { immediate: true },
-)
 
 watch(avatarFile, (file) => {
     revokePreview()
@@ -113,39 +92,96 @@ async function fileToDataUrl(file: File): Promise<string> {
     })
 }
 
+watch(
+    () => [props.open, props.user],
+    () => {
+        if (props.open) {
+            if (props.user) {
+                firstName.value = props.user.first_name
+                lastName.value = props.user.last_name
+                role.value = props.user.role ?? 'staff'
+                phoneNumber.value = props.user.phone_number
+                address.value = props.user.address ?? ''
+                avatarUrl.value = props.user.avatar ?? ''
+                avatarFile.value = undefined
+                revokePreview()
+
+                const matchedShop = shopStore.shops.find(
+                    (s) => s.name === props.user!.shop_name,
+                )
+                shopId.value = matchedShop?.id
+            } else {
+                resetForm()
+            }
+        }
+    },
+    { immediate: true },
+)
+
+function buildPayload(): FormData {
+    const fd = new FormData()
+    fd.append('first_name', firstName.value)
+    fd.append('last_name', lastName.value)
+    fd.append('phone_number', phoneNumber.value)
+    fd.append('role', role.value)
+    if (shopId.value != null) fd.append('shop', String(shopId.value))
+    if (address.value) fd.append('address', address.value)
+    if (avatarFile.value) fd.append('avatar', avatarFile.value)
+    return fd
+}
+
+const phoneError = ref('')
+
+watch(phoneNumber, () => {
+    phoneError.value = ''
+})
+
 async function handleSubmit() {
-    let avatar = avatarUrl.value
-    if (avatarFile.value) {
-        avatar = await fileToDataUrl(avatarFile.value)
+    if (!PhoneNumberValidator(phoneNumber.value)) {
+        phoneError.value = 'Phone number must be 10 digits and start with 0'
+        return
     }
 
-    emit('save', {
-        ...(props.user?.id != null && { id: props.user.id }),
-        firstName: firstName.value,
-        lastName: lastName.value,
-        role: role.value,
-        shop: shop.value,
-        phoneNumber: phoneNumber.value,
-        address: address.value || undefined,
-        bio: bio.value || undefined,
-        avatar: avatar || undefined,
-    })
-    emit('close', false)
+    submitting.value = true
+
+    try {
+        const payload = buildPayload()
+
+        if (isEdit.value && props.user) {
+            await usersStore.updateUser(props.user.id, payload)
+        } else {
+            await usersStore.createUser(payload)
+        }
+
+        close()
+    } catch (error: unknown) {
+        const errorResponse = error as ErrorResponse
+        toast.add({
+            title: errorResponse.message || 'Error',
+            description: errorResponse.detail || 'Something went wrong. Please try again.',
+            color: 'error',
+            icon: 'i-lucide-alert-circle',
+        })
+    } finally {
+        submitting.value = false
+    }
 }
 
 function close() {
     emit('close', false)
 }
+
+onMounted(() => {
+    if (shopStore.shops.length === 0) {
+        shopStore.getShops()
+    }
+})
 </script>
 
 <template>
-    <UModal
-        :open="open"
-        :title="isEdit ? 'Edit user' : 'Add user'"
+    <UModal :open="open" :title="isEdit ? 'Edit user' : 'Add user'"
         :description="isEdit ? 'Update the user details below.' : 'Fill in the details to add a new user.'"
-        :ui="{ content: 'w-[calc(100vw-2rem)] max-w-2xl' }"
-        @update:open="emit('close', $event)"
-    >
+        :ui="{ content: 'w-[calc(100vw-2rem)] max-w-2xl' }" @update:open="emit('close', $event)">
         <template #default>
             <span class="hidden" aria-hidden="true" />
         </template>
@@ -163,60 +199,29 @@ function close() {
 
                 <div class="grid gap-5 sm:grid-cols-2">
                     <UFormField label="Role" name="role" required>
-                        <USelect
-                            v-model="role"
-                            :items="roleOptions"
-                            value-key="value"
-                            placeholder="Select role"
-                            size="lg"
-                            class="w-full"
-                        />
+                        <USelect v-model="role" :items="roleOptions" value-key="value" placeholder="Select role"
+                            size="lg" class="w-full" />
                     </UFormField>
 
                     <UFormField label="Shop" name="shop">
-                        <USelect
-                            v-model="shop"
-                            :items="shopOptions"
-                            value-key="value"
-                            placeholder="Select shop"
-                            size="lg"
-                            class="w-full"
-                            :disabled="isShopDisabled"
-                        />
+                        <USelect v-model="shopId" :items="shopOptions" value-key="value" placeholder="Select shop"
+                            size="lg" class="w-full" :disabled="isShopDisabled" />
                     </UFormField>
                 </div>
 
-                <UFormField
-                    label="Phone number"
-                    name="phoneNumber"
-                    required
-                    description="This is the phone number the user signs in with."
-                >
-                    <UInput
-                        v-model="phoneNumber"
-                        type="tel"
-                        placeholder="e.g. 0551234567"
-                        size="lg"
-                        required
-                        class="w-full"
-                    />
+                <UFormField label="Phone number" name="phoneNumber" required
+                    :description="phoneError ? undefined : 'This is the phone number the user signs in with.'"
+                    :error="phoneError || undefined">
+                    <UInput v-model="phoneNumber" type="tel" placeholder="e.g. 0551234567" size="lg" required
+                        class="w-full" :color="phoneError ? 'error' : undefined" :readonly="isEdit" />
                 </UFormField>
 
                 <UFormField label="Avatar" name="avatar" description="Optional profile image. PNG, JPG or GIF.">
                     <div class="space-y-2">
-                        <UFileUpload
-                            v-model="avatarFile"
-                            accept="image/*"
-                            label="Drop image here or click to upload"
-                            description="Optional. Max 5MB."
-                            icon="i-lucide-image"
-                            variant="area"
-                            class="min-h-32"
-                        />
-                        <div
-                            v-if="previewUrl"
-                            class="flex items-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-2 dark:border-neutral-700 dark:bg-neutral-800/50"
-                        >
+                        <UFileUpload v-model="avatarFile" accept="image/*" label="Drop image here or click to upload"
+                            description="Optional. Max 5MB." icon="i-lucide-image" variant="area" class="min-h-32" />
+                        <div v-if="previewUrl"
+                            class="flex items-center gap-3 rounded-lg border border-neutral-200 bg-neutral-50 p-2 dark:border-neutral-700 dark:bg-neutral-800/50">
                             <img :src="previewUrl" alt="Avatar preview" class="h-14 w-14 rounded-full object-cover">
                             <span class="text-sm text-neutral-500 dark:text-neutral-400">
                                 {{ avatarFile ? 'New image selected' : 'Current avatar' }}
@@ -226,37 +231,16 @@ function close() {
                 </UFormField>
 
                 <UFormField label="Address" name="address">
-                    <UTextarea
-                        v-model="address"
-                        placeholder="Optional address..."
-                        :rows="2"
-                        class="w-full"
-                    />
-                </UFormField>
-
-                <UFormField label="Bio" name="bio">
-                    <UTextarea
-                        v-model="bio"
-                        placeholder="Optional short bio..."
-                        :rows="3"
-                        class="w-full"
-                    />
+                    <UTextarea v-model="address" placeholder="Optional address..." :rows="2" class="w-full" />
                 </UFormField>
             </form>
         </template>
         <template #footer>
             <div class="flex justify-end gap-2 w-full">
                 <UButton color="neutral" variant="outline" label="Cancel" @click="close" />
-                <UButton
-                    type="submit"
-                    form="add-edit-user-form"
-                    color="success"
-                    label="Save"
-                    class="ml-auto"
-                    :disabled="!firstName || !lastName || !phoneNumber"
-                />
+                <UButton type="submit" form="add-edit-user-form" color="success" label="Save" class="ml-auto"
+                    :loading="submitting" :disabled="!firstName || !lastName || !phoneNumber || submitting" />
             </div>
         </template>
     </UModal>
 </template>
-

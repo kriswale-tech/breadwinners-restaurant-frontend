@@ -1,47 +1,53 @@
 <script setup lang="ts">
-import type { Product, ProductPackage, ProductStatus } from '~/data/products'
-import { products } from '~/data/products'
+import type { Product, ProductPackage } from '~/types/products'
+const config = useRuntimeConfig()
 
 const props = withDefaults(
     defineProps<{
         open: boolean
-        package?: ProductPackage | null
+        pkg?: ProductPackage | null
     }>(),
-    { package: null }
+    { pkg: null },
 )
 
 const emit = defineEmits<{
-    'close': [value: boolean]
-    save: [payload: {
-        id?: number
-        name: string
-        description?: string
-        image?: string
-        price: number
-        status?: ProductStatus
-        items: { product: Product; quantity: number }[]
-    }]
+    close: [value: boolean]
 }>()
 
-const isEdit = computed(() => !!props.package)
+const productStore = useProductStore()
+const isEdit = computed(() => !!props.pkg)
+const submitting = ref(false)
 
 const name = ref('')
 const description = ref('')
-const price = ref<number>(0)
+const price = ref<string>('0')
 const isActive = ref(true)
-const imageFile = ref<File | undefined>(undefined)
+const imageFile = ref<File | null>(null)
 const imageUrl = ref('')
 const objectUrl = ref<string | null>(null)
 
-type FormItem = { product: Product; quantity: number }
+type FormItem = { productId: number; productName: string; quantity: number }
 const formItems = ref<FormItem[]>([])
 
 const productOptions = computed(() =>
-    products.map((p) => ({ label: p.name, value: p }))
+    productStore.products.map((p) => ({ label: p.name, value: p })),
 )
 
 const selectedProduct = ref<Product | undefined>(undefined)
 const quantityToAdd = ref(1)
+
+function resetForm() {
+    name.value = ''
+    description.value = ''
+    price.value = '0'
+    isActive.value = true
+    formItems.value = []
+    selectedProduct.value = undefined
+    quantityToAdd.value = 1
+    imageFile.value = null
+    imageUrl.value = ''
+    revokePreview()
+}
 
 function revokePreview() {
     if (objectUrl.value) {
@@ -50,74 +56,57 @@ function revokePreview() {
     }
 }
 
-function resetForm() {
-    name.value = ''
-    description.value = ''
-    price.value = 0
-    isActive.value = true
-    formItems.value = []
-    selectedProduct.value = undefined
-    quantityToAdd.value = 1
-    imageFile.value = undefined
-    imageUrl.value = ''
-    revokePreview()
-}
-
 watch(
-    () => [props.open, props.package],
+    () => [props.open, props.pkg],
     () => {
         if (props.open) {
-            if (props.package) {
-                name.value = props.package.name
-                description.value = props.package.description ?? ''
-                price.value = Number(props.package.price) || 0
-                isActive.value = props.package.status !== 'disabled'
-                formItems.value = props.package.items.map((i) => ({
-                    product: i.product,
+            if (props.pkg) {
+                name.value = props.pkg.name
+                description.value = props.pkg.description
+                price.value = props.pkg.price
+                isActive.value = props.pkg.is_active
+                formItems.value = props.pkg.items.map((i) => ({
+                    productId: i.product,
+                    productName: i.product_name ?? '',
                     quantity: i.quantity,
                 }))
-                imageUrl.value = props.package.image ?? ''
-                imageFile.value = undefined
-                revokePreview()
                 selectedProduct.value = undefined
                 quantityToAdd.value = 1
-            } else {
+                imageUrl.value = props.pkg.image
+                    ? new URL(props.pkg.image, String(config.public.apiBase)).toString()
+                    : ''
+                imageFile.value = null
+                revokePreview()
+            }
+            else {
                 resetForm()
             }
         }
     },
-    { immediate: true }
+    { immediate: true },
 )
 
-watch(imageFile, (file) => {
+watch(imageFile, (file: File | null) => {
     revokePreview()
     if (file) {
         objectUrl.value = URL.createObjectURL(file)
     }
 })
 
-const previewUrl = computed(() => {
-    if (objectUrl.value) return objectUrl.value
-    return imageUrl.value || null
+const previewUrl = computed<string | null>(() => {
+    return (objectUrl.value || imageUrl.value || null) as string | null
 })
-
-onUnmounted(() => {
-    revokePreview()
-})
-
-async function fileToDataUrl(file: File): Promise<string> {
-    return new Promise((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => resolve(reader.result as string)
-        reader.onerror = reject
-        reader.readAsDataURL(file)
-    })
-}
 
 function addItem() {
     const product = selectedProduct.value
-    if (!product || quantityToAdd.value < 1) return
-    formItems.value.push({ product, quantity: quantityToAdd.value })
+    if (!product || quantityToAdd.value < 1)
+        return
+
+    formItems.value.push({
+        productId: product.id,
+        productName: product.name,
+        quantity: quantityToAdd.value,
+    })
     selectedProduct.value = undefined
     quantityToAdd.value = 1
 }
@@ -126,21 +115,49 @@ function removeItem(index: number) {
     formItems.value.splice(index, 1)
 }
 
-async function handleSubmit() {
-    let image = imageUrl.value
-    if (imageFile.value) {
-        image = await fileToDataUrl(imageFile.value)
-    }
-    emit('save', {
-        ...(props.package?.id != null && { id: props.package.id }),
+function buildPayload(): ProductPackage {
+    return {
+        ...(props.pkg?.id != null && { id: props.pkg.id }),
         name: name.value,
-        description: description.value || undefined,
-        image: image || undefined,
+        description: description.value,
         price: price.value,
-        status: (isActive.value ? 'active' : 'disabled') as ProductStatus,
-        items: formItems.value,
-    })
-    emit('close', false)
+        image: props.pkg?.image ?? null,
+        is_active: isActive.value,
+        items: formItems.value.map((i) => ({
+            product: i.productId,
+            quantity: i.quantity,
+        })),
+    }
+}
+
+async function handleSubmit() {
+    submitting.value = true
+    const payload = buildPayload()
+
+    const formData = new FormData()
+    formData.append('name', payload.name)
+    formData.append('description', payload.description)
+    formData.append('price', payload.price)
+    formData.append('is_active', String(payload.is_active))
+    formData.append('items', JSON.stringify(payload.items))
+    if (imageFile.value) {
+        formData.append('image', imageFile.value)
+    }
+
+    try {
+        if (isEdit.value && props.pkg?.id != null)
+            await productStore.updatePackage(props.pkg.id, formData)
+        else
+            await productStore.createPackage(formData)
+
+        close()
+    }
+    catch (error) {
+        console.error(error)
+    }
+    finally {
+        submitting.value = false
+    }
 }
 
 function close() {
@@ -149,13 +166,9 @@ function close() {
 </script>
 
 <template>
-    <UModal
-        :open="open"
-        :title="isEdit ? 'Edit package' : 'Add package'"
+    <UModal :open="open" :title="isEdit ? 'Edit package' : 'Add package'"
         :description="isEdit ? 'Update the package details below.' : 'Fill in the details to add a new package.'"
-        :ui="{ content: 'w-[calc(100vw-2rem)] max-w-2xl' }"
-        @update:open="emit('close', $event)"
-    >
+        :ui="{ content: 'w-[calc(100vw-2rem)] max-w-2xl' }" @update:open="emit('close', $event)">
         <template #default>
             <span class="hidden" aria-hidden="true" />
         </template>
@@ -180,64 +193,29 @@ function close() {
                 </UFormField>
 
                 <UFormField label="Description" name="description">
-                    <UTextarea
-                        v-model="description"
-                        placeholder="Short description of the package..."
-                        :rows="2"
-                        class="w-full"
-                    />
+                    <UTextarea v-model="description" placeholder="Short description of the package..." :rows="2"
+                        class="w-full" />
                 </UFormField>
 
-                <UFormField
-                    label="Products in package"
-                    name="items"
-                    description="Search and select a product, set quantity, then add to the list."
-                >
+                <UFormField label="Products in package" name="items"
+                    description="Search and select a product, set quantity, then add to the list.">
                     <div class="flex flex-wrap items-end gap-2">
-                        <USelectMenu
-                            v-model="selectedProduct"
-                            :items="productOptions"
-                            placeholder="Search product..."
-                            class="min-w-0 flex-1 sm:min-w-48"
-                            value-key="value"
-                        />
-                        <UInput
-                            v-model.number="quantityToAdd"
-                            type="number"
-                            min="1"
-                            placeholder="Qty"
-                            class="w-20"
-                            size="md"
-                        />
-                        <UButton
-                            type="button"
-                            color="primary"
-                            variant="soft"
-                            icon="i-lucide-plus"
-                            label="Add"
-                            :disabled="!selectedProduct || quantityToAdd < 1"
-                            @click="addItem"
-                        />
+                        <USelectMenu v-model="selectedProduct" :items="productOptions" placeholder="Search product..."
+                            class="min-w-0 flex-1 sm:min-w-48" value-key="value" />
+                        <UInput v-model.number="quantityToAdd" type="number" min="1" placeholder="Qty" class="w-20"
+                            size="md" />
+                        <UButton type="button" color="primary" variant="soft" icon="i-lucide-plus" label="Add"
+                            :disabled="!selectedProduct || quantityToAdd < 1" @click="addItem" />
                     </div>
 
                     <ul v-if="formItems.length" class="mt-3 space-y-2">
-                        <li
-                            v-for="(item, index) in formItems"
-                            :key="index"
-                            class="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800/50"
-                        >
+                        <li v-for="(item, index) in formItems" :key="index"
+                            class="flex items-center justify-between gap-2 rounded-lg border border-neutral-200 bg-neutral-50 px-3 py-2 dark:border-neutral-700 dark:bg-neutral-800/50">
                             <span class="text-sm font-medium text-neutral-900 dark:text-white">
-                                {{ item.product.name }} x {{ item.quantity }}
+                                {{ item.productName }} x {{ item.quantity }}
                             </span>
-                            <UButton
-                                type="button"
-                                icon="i-lucide-x"
-                                color="error"
-                                variant="ghost"
-                                size="xs"
-                                aria-label="Remove"
-                                @click="removeItem(index)"
-                            />
+                            <UButton type="button" icon="i-lucide-x" color="error" variant="ghost" size="xs"
+                                aria-label="Remove" @click="removeItem(index)" />
                         </li>
                     </ul>
                     <p v-else class="mt-2 text-sm text-neutral-500 dark:text-neutral-400">
@@ -247,19 +225,12 @@ function close() {
 
                 <div class="grid gap-5 sm:grid-cols-2">
                     <UFormField label="Price (GHS)" name="price" required>
-                        <UInput
-                            v-model.number="price"
-                            type="number"
-                            step="0.01"
-                            min="0"
-                            placeholder="0.00"
-                            size="lg"
-                            required
-                            class="w-full"
-                        />
+                        <UInput v-model="price" type="number" step="0.01" min="0" placeholder="0.00" size="lg" required
+                            class="w-full" />
                     </UFormField>
 
-                    <UFormField label="Status" name="status" description="Active packages are visible; disabled are hidden.">
+                    <UFormField label="Status" name="status"
+                        description="Active packages are visible; disabled are hidden.">
                         <USwitch v-model="isActive" :label="isActive ? 'Active' : 'Disabled'" />
                     </UFormField>
                 </div>
@@ -268,14 +239,8 @@ function close() {
         <template #footer>
             <div class="flex justify-end gap-2 w-full">
                 <UButton color="neutral" variant="outline" label="Cancel" @click="close" />
-                <UButton
-                    type="submit"
-                    form="add-edit-package-form"
-                    color="success"
-                    label="Save"
-                    class="ml-auto"
-                    :disabled="!name || (typeof price !== 'number' && Number.isNaN(Number(price))) || formItems.length === 0"
-                />
+                <UButton type="submit" form="add-edit-package-form" color="success" label="Save" class="ml-auto"
+                    :loading="submitting" :disabled="!name || !price || formItems.length === 0 || submitting" />
             </div>
         </template>
     </UModal>

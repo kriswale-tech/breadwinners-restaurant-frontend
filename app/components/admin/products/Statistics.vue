@@ -1,9 +1,6 @@
 <script setup lang="ts">
-import { products } from '~/data/products'
+const productStore = useProductStore()
 
-const productsCount = computed(() => products.length)
-const categoriesCount = computed(() => 0)
-const packagesCount = computed(() => 0)
 </script>
 
 <template>
@@ -19,7 +16,7 @@ const packagesCount = computed(() => 0)
                         Products
                     </p>
                     <p class="mt-1 text-2xl font-semibold text-neutral-900 dark:text-white">
-                        {{ productsCount }}
+                        {{ productStore.productStatistics.products }}
                     </p>
                 </div>
             </div>
@@ -36,7 +33,7 @@ const packagesCount = computed(() => 0)
                         Categories
                     </p>
                     <p class="mt-1 text-2xl font-semibold text-neutral-900 dark:text-white">
-                        {{ categoriesCount }}
+                        {{ productStore.productStatistics.categories }}
                     </p>
                 </div>
             </div>
@@ -53,7 +50,7 @@ const packagesCount = computed(() => 0)
                         Packages
                     </p>
                     <p class="mt-1 text-2xl font-semibold text-neutral-900 dark:text-white">
-                        {{ packagesCount }}
+                        {{ productStore.productStatistics.packages }}
                     </p>
                 </div>
             </div>

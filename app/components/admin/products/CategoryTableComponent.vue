@@ -1,23 +1,19 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { Category } from '~/data/products'
+import type { ProductCategory } from '~/types/products'
 
 const UButton = resolveComponent('UButton')
+const productStore = useProductStore()
 
-const props = withDefaults(
-    defineProps<{
-        categories?: Category[]
-    }>(),
-    { categories: () => [] },
-)
+const categories = computed(() => productStore.categories)
 
 const emit = defineEmits<{
-    edit: [category: Category]
-    delete: [category: Category]
+    edit: [category: ProductCategory]
+    delete: [category: ProductCategory]
 }>()
 
-const columns: TableColumn<Category>[] = [
+const columns: TableColumn<ProductCategory>[] = [
     {
         accessorKey: 'name',
         header: 'Name',

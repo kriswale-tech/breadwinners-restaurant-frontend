@@ -1,6 +1,14 @@
 <script setup lang="ts">
-const loginStore = useLoginStore()
+const authStore = useAuthStore()
 
+const user = computed(() => authStore.user)
+
+const userRole = computed(() => {
+  if (user.value?.profile?.role) {
+    return user.value?.profile?.role === 'admin' ? 'Administrator' : 'Staff'
+  }
+  return 'Super Admin'
+})
 const navItems = [
   [
     {
@@ -50,7 +58,7 @@ function goToProfile() {
 }
 
 function handleLogout() {
-  loginStore.logout()
+  authStore.logout()
   navigateTo('/admin/auth/login')
 }
 
@@ -75,23 +83,19 @@ const userMenuItems = [
 
 <template>
   <aside class="flex h-full w-full flex-col border-r border-neutral-200 dark:border-neutral-800">
-    <UNavigationMenu
-      orientation="vertical"
-      :items="navItems"
+    <UNavigationMenu orientation="vertical" :items="navItems"
       :ui="{ root: 'gap-2', item: 'py-1', link: 'py-3 text-base' }"
-      class="w-full flex-1 px-4 py-4 data-[orientation=vertical]:w-full"
-    />
+      class="w-full flex-1 px-4 py-4 data-[orientation=vertical]:w-full" />
 
     <div class="border-t border-neutral-200 px-4 py-4 dark:border-neutral-800">
       <UDropdownMenu :items="userMenuItems">
-        <button
-          type="button"
-          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800"
-        >
+        <button type="button"
+          class="flex w-full items-center gap-3 rounded-lg px-3 py-2 text-left hover:bg-neutral-100 dark:hover:bg-neutral-800">
           <UAvatar size="lg" alt="Admin" icon="i-lucide-user" />
           <div class="flex flex-col">
-            <span class="text-sm font-medium text-neutral-900 dark:text-neutral-50">Admin User</span>
-            <span class="text-xs text-neutral-500 dark:text-neutral-400">Administrator</span>
+            <span class="text-sm font-medium text-neutral-900 dark:text-neutral-50">{{ user?.first_name }} {{
+              user?.last_name }}</span>
+            <span class="text-xs text-neutral-500 dark:text-neutral-400">{{ userRole }}</span>
           </div>
         </button>
       </UDropdownMenu>

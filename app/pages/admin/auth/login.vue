@@ -1,15 +1,19 @@
 <script setup lang="ts">
-const loginStore = useLoginStore()
+const authStore = useAuthStore()
 const toast = useToast()
-const phone = ref('')
-const password = ref('')
+const phone = ref('0208232081')
+const password = ref('christian_amoakohene')
+const showPassword = ref(false)
 
-function onSubmit() {
-    const isValid = loginStore.login(phone.value, password.value)
-    if (!isValid) {
+async function onSubmit() {
+    try {
+        await authStore.login(phone.value, password.value)
+    }
+    catch (error) {
+        console.error(error)
         toast.add({
-            title: 'Invalid credentials',
-            description: 'Please check your phone number and password and try again',
+            title: 'Error',
+            description: (error as any)?.detail || 'An error occurred while logging in',
             color: 'error',
         })
         return
@@ -37,8 +41,16 @@ function onSubmit() {
                 </UFormField>
 
                 <UFormField label="Password" name="password" required>
-                    <UInput v-model="password" type="password" placeholder="Enter your password" size="lg"
-                        class="w-full" required />
+                    <UInput v-model="password" :type="showPassword ? 'text' : 'password'"
+                        placeholder="Enter your password" size="lg" class="w-full" required>
+                        <template #trailing>
+                            <button type="button"
+                                class="flex items-center justify-center px-2 text-neutral-500 hover:text-neutral-700 dark:text-neutral-400 dark:hover:text-neutral-200 pointer-events-auto"
+                                @click="showPassword = !showPassword">
+                                <Icon :name="showPassword ? 'i-lucide-eye-off' : 'i-lucide-eye'" class="size-5" />
+                            </button>
+                        </template>
+                    </UInput>
                 </UFormField>
 
                 <UButton type="submit" block size="lg" color="primary" label="Sign in" class="cursor-pointer" />

@@ -1,31 +1,35 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { type User, users } from '~/data/users'
+import type { UsersList } from '~/types'
 
 const UBadge = resolveComponent('UBadge')
 const UButton = resolveComponent('UButton')
+const usersStore = useUsersStore()
+const dayjs = useDayjs()
+
+const users = computed(() => usersStore.users)
+const loading = computed(() => usersStore.loading)
 
 const emit = defineEmits<{
-    edit: [user: User]
-    delete: [user: User]
+    edit: [user: UsersList]
+    delete: [user: UsersList]
 }>()
 
-function formatLastLogin(value?: string): string {
-    if (!value) return 'Never'
-    const date = new Date(value)
-    if (Number.isNaN(date.getTime())) return value
-    return date.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
+function formatDate(value: string | null): string {
+    if (!value) return '—'
+    const d = dayjs(value)
+    return d.isValid() ? d.format('MMM D, YYYY h:mm A') : '—'
 }
 
-const columns: TableColumn<User>[] = [
+const columns: TableColumn<UsersList>[] = [
     {
         id: 'user',
         header: 'User',
         cell: ({ row }) => {
             const avatar = row.original.avatar
-            const firstName = row.original.firstName
-            const lastName = row.original.lastName
+            const firstName = row.original.first_name
+            const lastName = row.original.last_name
             const role = row.original.role
             const fullName = `${firstName} ${lastName}`
 
@@ -56,7 +60,7 @@ const columns: TableColumn<User>[] = [
                         h(
                             'p',
                             { class: 'text-xs text-neutral-500 dark:text-neutral-400 mt-0.5 capitalize' },
-                            role,
+                            role ?? 'Super Admin',
                         ),
                     ]),
                 ],
@@ -64,22 +68,7 @@ const columns: TableColumn<User>[] = [
         },
     },
     {
-        accessorKey: 'address',
-        header: 'Address',
-        meta: { class: { td: 'max-w-xs truncate text-sm text-neutral-600 dark:text-neutral-400' } },
-    },
-    {
-        id: 'lastLogin',
-        header: 'Last login',
-        cell: ({ row }) => formatLastLogin(row.original.lastLogin),
-    },
-    {
-        accessorKey: 'bio',
-        header: 'Bio',
-        meta: { class: { td: 'max-w-xs truncate text-sm text-neutral-600 dark:text-neutral-400' } },
-    },
-    {
-        accessorKey: 'phoneNumber',
+        accessorKey: 'phone_number',
         header: 'Phone number',
         meta: { class: { td: 'text-sm text-neutral-900 dark:text-neutral-100' } },
     },
@@ -87,17 +76,38 @@ const columns: TableColumn<User>[] = [
         id: 'shop',
         header: 'Shop',
         cell: ({ row }) => {
-            const shop = row.original.shop
-            if (!shop) {
-                return '—'
-            }
-            const label =
-                shop === 'breadwinners'
-                    ? 'BreadWinners'
-                    : shop === 'restaurant'
-                        ? 'Restaurant'
-                        : shop
-            return h(UBadge, { variant: 'soft' }, () => label)
+            const shop = row.original.shop_name
+            if (!shop) return '—'
+            return h(UBadge, { variant: 'soft', class: 'capitalize' }, () => shop)
+        },
+    },
+    {
+        id: 'address',
+        header: 'Address',
+        cell: ({ row }) => row.original.address ?? '—',
+        meta: { class: { td: 'max-w-xs truncate text-sm text-neutral-600 dark:text-neutral-400' } },
+    },
+    {
+        id: 'dateJoined',
+        header: 'Date joined',
+        cell: ({ row }) => formatDate(row.original.date_joined),
+        meta: { class: { td: 'text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap' } },
+    },
+    {
+        id: 'lastLogin',
+        header: 'Last login',
+        cell: ({ row }) => formatDate(row.original.last_login),
+        meta: { class: { td: 'text-sm text-neutral-600 dark:text-neutral-400 whitespace-nowrap' } },
+    },
+    {
+        id: 'isActive',
+        header: 'Is Active',
+        cell: ({ row }) => {
+            const isSet = row.original.is_password_set
+            return h(UBadge, {
+                color: isSet ? 'success' : 'warning',
+                variant: 'soft',
+            }, () => isSet ? 'Active' : 'Pending')
         },
     },
     {
@@ -128,13 +138,14 @@ const columns: TableColumn<User>[] = [
         },
     },
 ]
+
+onMounted(async () => {
+    await callOnce('users', () => usersStore.getUsers())
+})
 </script>
 
 <template>
     <div class="space-y-4">
-        <UTable :data="users" :columns="columns" class="w-full" />
+        <UTable :data="users" :columns="columns" :loading="loading" class="w-full" />
     </div>
 </template>
-
-<style scoped></style>
-
