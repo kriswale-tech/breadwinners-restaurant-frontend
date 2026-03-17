@@ -1,17 +1,20 @@
 <script setup lang="ts">
-import type { Ingredient } from '~/data/ingredients'
+import type { Inventory, InventoryCreateUpdatePayload } from '~/types/inventory'
+import type { ErrorResponse } from '~/types/error'
+
+const inventoryStore = useInventoryStore()
+const toast = useToast()
 
 const props = withDefaults(
     defineProps<{
         open: boolean
-        ingredient?: Ingredient | null
+        ingredient?: Inventory | null
     }>(),
-    { ingredient: null }
+    { ingredient: null },
 )
 
 const emit = defineEmits<{
-    'close': [value: boolean]
-    save: [payload: Partial<Ingredient> & { name: string; quantity: number; unit: string }]
+    close: [value: boolean]
 }>()
 
 const isEdit = computed(() => !!props.ingredient)
@@ -39,17 +42,33 @@ watch(
             }
         }
     },
-    { immediate: true }
+    { immediate: true },
 )
 
-function handleSubmit() {
-    emit('save', {
-        ...(props.ingredient?.id != null && { id: props.ingredient.id }),
+async function handleSubmit() {
+    const payload: InventoryCreateUpdatePayload = {
         name: name.value,
-        quantity: quantity.value,
         unit: unit.value,
-    })
-    emit('close', false)
+        quantity: Number(quantity.value),
+    }
+    try {
+        if (props.ingredient?.id != null) {
+            await inventoryStore.updateIngredient(props.ingredient.id, payload)
+        } else {
+            await inventoryStore.createIngredient(payload)
+        }
+        close()
+    }
+    catch (error) {
+        console.error(error)
+        const errorResponse = error as ErrorResponse
+        toast.add({
+            title: errorResponse.message || 'Error',
+            description: errorResponse.detail || 'Failed to create ingredient',
+            color: 'error',
+            icon: 'i-lucide-alert-circle',
+        })
+    }
 }
 
 function close() {
@@ -58,13 +77,9 @@ function close() {
 </script>
 
 <template>
-    <UModal
-        :open="open"
-        :title="isEdit ? 'Edit ingredient' : 'Add ingredient'"
+    <UModal :open="open" :title="isEdit ? 'Edit ingredient' : 'Add ingredient'"
         :description="isEdit ? 'Update the ingredient details below.' : 'Fill in the details to add a new ingredient.'"
-        :ui="{ content: 'w-[calc(100vw-2rem)] max-w-lg' }"
-        @update:open="emit('close', $event)"
-    >
+        :ui="{ content: 'w-[calc(100vw-2rem)] max-w-lg' }" @update:open="emit('close', $event)">
         <template #default>
             <span class="hidden" aria-hidden="true" />
         </template>
@@ -76,16 +91,8 @@ function close() {
 
                 <div class="grid gap-5 sm:grid-cols-2">
                     <UFormField label="Quantity" name="quantity" required>
-                        <UInput
-                            v-model.number="quantity"
-                            type="number"
-                            step="any"
-                            min="0"
-                            placeholder="e.g. 20"
-                            size="lg"
-                            required
-                            class="w-full"
-                        />
+                        <UInput v-model.number="quantity" type="number" step="any" min="0" placeholder="e.g. 20"
+                            size="lg" required class="w-full" />
                     </UFormField>
 
                     <UFormField label="Unit" name="unit" required>
@@ -97,14 +104,9 @@ function close() {
         <template #footer>
             <div class="flex justify-end gap-2 w-full">
                 <UButton color="neutral" variant="outline" label="Cancel" @click="close" />
-                <UButton
-                    type="submit"
-                    form="add-edit-ingredient-form"
-                    color="success"
-                    label="Save"
-                    class="ml-auto"
-                    :disabled="!name || quantity < 0 || !unit"
-                />
+                <UButton type="submit" form="add-edit-ingredient-form" color="success" label="Save" class="ml-auto"
+                    :disabled="!name.trim() || Number.isNaN(quantity) || quantity < 0 || !unit.trim()"
+                    :loading="inventoryStore.loading" />
             </div>
         </template>
     </UModal>

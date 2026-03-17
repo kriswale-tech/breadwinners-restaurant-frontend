@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { products } from '~/data/products'
-import { ingredients, type Ingredient } from '~/data/ingredients'
+import type { ErrorResponse } from '~/types/error'
+import type { Inventory } from '~/types/inventory'
+import type { ProductionRecordPayload } from '~/types/inventory'
 
+const { products } = storeToRefs(useProductStore())
+const { ingredients } = storeToRefs(useInventoryStore())
+const inventoryStore = useInventoryStore()
 const toast = useToast()
 
 interface IngredientRow {
@@ -23,7 +27,7 @@ const showPreviewModal = ref(false)
 const submitting = ref(false)
 
 const productOptions = computed(() =>
-    products.map((p) => ({
+    products.value.map((p) => ({
         label: p.name,
         value: p.id,
     })),
@@ -41,12 +45,12 @@ function ingredientOptionsForNew() {
     return ingredientOptions.value.filter((opt) => !selectedIds.includes(opt.value))
 }
 
-function findIngredientById(id: number | null | undefined): Ingredient | undefined {
+function findIngredientById(id: number | null | undefined): Inventory | undefined {
     if (id == null) return undefined
     return ingredients.value.find((i) => i.id === id)
 }
 
-const selectedProduct = computed(() => products.find((p) => p.id === productId.value) || null)
+const selectedProduct = computed(() => products.value.find((p) => p.id === productId.value) || null)
 
 const isBasicInfoValid = computed(() => {
     return (
@@ -112,10 +116,8 @@ function resetForm() {
     newQuantityUsed.value = null
 }
 
-function buildPayload() {
+function buildPayload(): ProductionRecordPayload {
     return {
-        // TODO: wire actual shop selection when design is ready
-        shop: 1,
         product: productId.value!,
         quantity_produced: quantityProduced.value!,
         ingredients: ingredientRows.value.map((row) => ({
@@ -140,22 +142,19 @@ async function recordProduction() {
     if (!isFormValid.value) return
     submitting.value = true
     try {
-        const payload = buildPayload()
-        // TODO: replace with real API call
-        // eslint-disable-next-line no-console
-        console.log('Recording production', payload)
-
+        await inventoryStore.recordProduction(buildPayload())
         showPreviewModal.value = false
-        toast.add({
-            title: 'Production recorded successfully',
-            color: 'success',
-        })
         resetForm()
     } catch (error) {
+        console.error(error)
+        const errorResponse = error as ErrorResponse
         toast.add({
-            title: 'Failed to record production',
+            title: errorResponse.message || 'Error',
+            description: errorResponse.detail || 'Failed to record production',
             color: 'error',
+            icon: 'i-lucide-alert-circle',
         })
+        // Store shows toast on error
     } finally {
         submitting.value = false
     }
@@ -172,27 +171,14 @@ async function recordProduction() {
 
             <div class="grid gap-5 md:grid-cols-2 max-w-2xl">
                 <UFormField label="Product" name="product" required>
-                    <USelectMenu
-                        v-model="productId"
-                        :items="productOptions"
-                        value-key="value"
-                        placeholder="Select product"
-                        class="w-full"
-                    />
+                    <USelectMenu v-model="productId" :items="productOptions" value-key="value"
+                        placeholder="Select product" class="w-full" />
                 </UFormField>
 
                 <div>
                     <UFormField label="Quantity produced" name="quantity_produced" required>
-                        <UInput
-                            v-model.number="quantityProduced"
-                            type="number"
-                            min="1"
-                            step="1"
-                            placeholder="e.g. 20"
-                            size="lg"
-                            required
-                            class="w-full"
-                        />
+                        <UInput v-model.number="quantityProduced" type="number" min="1" step="1" placeholder="e.g. 20"
+                            size="lg" required class="w-full" />
                     </UFormField>
                     <p class="mt-1 text-xs text-neutral-500 dark:text-neutral-400">
                         Must be a positive whole number.
@@ -208,42 +194,26 @@ async function recordProduction() {
             </h2>
 
             <!-- Current ingredient form -->
-            <div class="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900/30">
+            <div
+                class="space-y-3 rounded-lg border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-900/30">
                 <div class="flex flex-wrap items-end gap-3">
                     <div class="flex-1 min-w-[180px]">
                         <UFormField label="Ingredient" name="new-ingredient" required>
-                            <USelectMenu
-                                v-model="newIngredientId"
-                                :items="ingredientOptionsForNew()"
-                                value-key="value"
-                                placeholder="Select ingredient"
-                                class="w-full"
-                            />
+                            <USelectMenu v-model="newIngredientId" :items="ingredientOptionsForNew()" value-key="value"
+                                placeholder="Select ingredient" class="w-full" />
                         </UFormField>
                     </div>
 
                     <div class="w-full sm:w-40">
                         <UFormField label="Quantity used" name="new-quantity" required>
-                            <UInput
-                                v-model.number="newQuantityUsed"
-                                type="number"
-                                min="0"
-                                step="any"
-                                placeholder="e.g. 2.5"
-                                size="lg"
-                                class="w-full"
-                            />
+                            <UInput v-model.number="newQuantityUsed" type="number" min="0" step="any"
+                                placeholder="e.g. 2.5" size="lg" class="w-full" />
                         </UFormField>
                     </div>
 
                     <div class="flex items-end">
-                        <UButton
-                            color="primary"
-                            variant="subtle"
-                            icon="i-lucide-plus"
-                            :disabled="!canAddCurrentIngredient"
-                            @click="addIngredient"
-                        >
+                        <UButton color="primary" variant="subtle" icon="i-lucide-plus"
+                            :disabled="!canAddCurrentIngredient" @click="addIngredient">
                             Add Ingredient
                         </UButton>
                     </div>
@@ -261,7 +231,8 @@ async function recordProduction() {
                         <span class="font-medium">
                             {{
                                 findIngredientById(newIngredientId)
-                                    ? `${findIngredientById(newIngredientId)!.quantity}${findIngredientById(newIngredientId)!.unit}`
+                                    ?
+                                    `${findIngredientById(newIngredientId)!.quantity}${findIngredientById(newIngredientId)!.unit}`
                                     : '—'
                             }}
                         </span>
@@ -271,11 +242,8 @@ async function recordProduction() {
 
             <!-- Added ingredients list -->
             <div class="space-y-2">
-                <div
-                    v-for="(row, index) in ingredientRows"
-                    :key="row.ingredientId"
-                    class="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900/60"
-                >
+                <div v-for="(row, index) in ingredientRows" :key="row.ingredientId"
+                    class="flex items-center justify-between gap-3 rounded-lg border border-neutral-200 bg-white px-3 py-2 dark:border-neutral-700 dark:bg-neutral-900/60">
                     <div class="min-w-0">
                         <p class="text-sm font-medium text-neutral-900 dark:text-white truncate">
                             {{ findIngredientById(row.ingredientId)?.name ?? 'Ingredient' }}
@@ -291,26 +259,18 @@ async function recordProduction() {
                         <span class="font-medium">
                             {{
                                 findIngredientById(row.ingredientId)
-                                    ? `${findIngredientById(row.ingredientId)!.quantity}${findIngredientById(row.ingredientId)!.unit}`
+                                    ?
+                                    `${findIngredientById(row.ingredientId)!.quantity}${findIngredientById(row.ingredientId)!.unit}`
                                     : '—'
                             }}
                         </span>
                     </div>
 
-                    <UButton
-                        color="neutral"
-                        variant="ghost"
-                        icon="i-lucide-trash-2"
-                        size="sm"
-                        aria-label="Remove ingredient"
-                        @click="removeIngredient(index)"
-                    />
+                    <UButton color="neutral" variant="ghost" icon="i-lucide-trash-2" size="sm"
+                        aria-label="Remove ingredient" @click="removeIngredient(index)" />
                 </div>
 
-                <p
-                    v-if="!hasIngredients"
-                    class="text-sm text-red-500 dark:text-red-400"
-                >
+                <p v-if="!hasIngredients" class="text-sm text-red-500 dark:text-red-400">
                     At least one ingredient is required.
                 </p>
             </div>
@@ -318,21 +278,12 @@ async function recordProduction() {
 
         <!-- Submit -->
         <div class="flex justify-end">
-            <UButton
-                color="success"
-                label="Submit"
-                :disabled="!isFormValid"
-                @click="handleSubmitClick"
-            />
+            <UButton color="success" label="Submit" :disabled="!isFormValid" @click="handleSubmitClick" />
         </div>
 
         <!-- Preview modal -->
-        <UModal
-            :open="showPreviewModal"
-            title="Confirm production"
-            :ui="{ content: 'w-[calc(100vw-2rem)] max-w-lg' }"
-            @update:open="showPreviewModal = $event"
-        >
+        <UModal :open="showPreviewModal" title="Confirm production" :ui="{ content: 'w-[calc(100vw-2rem)] max-w-lg' }"
+            @update:open="showPreviewModal = $event">
             <template #default>
                 <span class="hidden" aria-hidden="true" />
             </template>
@@ -352,13 +303,10 @@ async function recordProduction() {
                             Using:
                         </p>
                         <ul class="list-disc list-inside space-y-1">
-                            <li
-                                v-for="row in ingredientRows"
-                                :key="row.ingredientId"
-                            >
+                            <li v-for="row in ingredientRows" :key="row.ingredientId">
                                 {{
                                     findIngredientById(row.ingredientId)?.name ??
-                                        'Ingredient'
+                                    'Ingredient'
                                 }}:
                                 {{ row.quantityUsed }}
                                 {{ findIngredientById(row.ingredientId)?.unit ?? '' }}
@@ -369,18 +317,9 @@ async function recordProduction() {
             </template>
             <template #footer>
                 <div class="flex justify-end gap-2 w-full">
-                    <UButton
-                        color="neutral"
-                        variant="outline"
-                        label="Cancel"
-                        @click="showPreviewModal = false"
-                    />
-                    <UButton
-                        color="success"
-                        :loading="submitting"
-                        label="Record Production"
-                        @click="recordProduction"
-                    />
+                    <UButton color="neutral" variant="outline" label="Cancel" @click="showPreviewModal = false" />
+                    <UButton color="success" :loading="submitting" label="Record Production"
+                        @click="recordProduction" />
                 </div>
             </template>
         </UModal>
@@ -388,4 +327,3 @@ async function recordProduction() {
 </template>
 
 <style lang="css" scoped></style>
-

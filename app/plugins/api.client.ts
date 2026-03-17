@@ -19,6 +19,7 @@ export default defineNuxtPlugin(() => {
         options.headers = headers
       }
     },
+
     async onResponseError({ response, request, options }): Promise<any> {
       const authStore = useAuthStore()
 

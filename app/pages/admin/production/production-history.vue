@@ -1,33 +1,38 @@
 <script setup lang="ts">
-import { productionHistory, type ProductionRecord } from '~/data/production'
-import { products } from '~/data/products'
+import type { ProductionList } from '~/types/inventory'
+
+const inventoryStore = useInventoryStore()
+const productStore = useProductStore()
 
 const dateFilter = ref<string>('')
-const productFilter = ref<number | 'all'>('all')
+const productFilter = ref<string>('all')
 
-const selectedRecord = ref<ProductionRecord | null>(null)
+const selectedRecord = ref<ProductionList | null>(null)
 const showDetailsModal = ref(false)
 
-const productOptions = computed(() => [
-    { label: 'All products', value: 'all' as const },
-    ...products.map((p) => ({ label: p.name, value: p.id })),
-])
+const productOptions = computed(() => {
+    const names = [...new Set(productStore.products.map((p) => p.name))].sort()
+    return [
+        { label: 'All products', value: 'all' as const },
+        ...names.map((name) => ({ label: name, value: name })),
+    ]
+})
 
 const filteredHistory = computed(() => {
-    let list = productionHistory.value
+    let list = inventoryStore.production
 
     if (dateFilter.value) {
-        list = list.filter((r) => r.date.slice(0, 10) === dateFilter.value)
+        list = list.filter((r) => r.created_at.slice(0, 10) === dateFilter.value)
     }
 
     if (productFilter.value !== 'all') {
-        list = list.filter((r) => r.productId === productFilter.value)
+        list = list.filter((r) => r.product_name === productFilter.value)
     }
 
     return list
 })
 
-function openDetails(record: ProductionRecord) {
+function openDetails(record: ProductionList) {
     selectedRecord.value = record
     showDetailsModal.value = true
 }
@@ -36,6 +41,10 @@ function closeDetails() {
     showDetailsModal.value = false
     selectedRecord.value = null
 }
+
+onMounted(() => {
+    inventoryStore.getProduction()
+})
 </script>
 
 <template>
@@ -58,7 +67,7 @@ function closeDetails() {
         <AdminProductionHistoryTable :records="filteredHistory" @view="openDetails" />
 
         <!-- Details modal -->
-        <AdminProductionHistoryDetails v-model:open="showDetailsModal" :record="selectedRecord" />
+        <AdminProductionHistoryDetails v-model:open="showDetailsModal" :record-id="selectedRecord?.id ?? null" />
     </div>
 </template>
 

@@ -1,27 +1,27 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { Ingredient } from '~/data/ingredients'
+import type { Inventory } from '~/types/inventory'
 
 const UButton = resolveComponent('UButton')
 
 const props = withDefaults(
     defineProps<{
-        ingredients?: Ingredient[]
+        ingredients?: Inventory[]
     }>(),
     { ingredients: () => [] },
 )
 
 const emit = defineEmits<{
-    edit: [ingredient: Ingredient]
-    delete: [ingredient: Ingredient]
+    edit: [ingredient: Inventory]
+    delete: [ingredient: Inventory]
 }>()
 
-function formatQuantity(item: Ingredient): string {
-    return `${item.quantity}${item.unit}`
+function formatQuantity(item: Inventory): string {
+    return `${item.quantity} ${item.unit}`
 }
 
-const columns: TableColumn<Ingredient>[] = [
+const columns: TableColumn<Inventory>[] = [
     {
         accessorKey: 'name',
         header: 'Ingredient',

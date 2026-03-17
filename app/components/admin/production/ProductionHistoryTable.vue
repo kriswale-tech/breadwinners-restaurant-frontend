@@ -1,19 +1,19 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { ProductionRecord } from '~/data/production'
+import type { ProductionList } from '~/types/inventory'
 
 const UButton = resolveComponent('UButton')
 
 const props = withDefaults(
     defineProps<{
-        records?: ProductionRecord[]
+        records?: ProductionList[]
     }>(),
     { records: () => [] },
 )
 
 const emit = defineEmits<{
-    view: [record: ProductionRecord]
+    view: [record: ProductionList]
 }>()
 
 function formatDate(value: string): string {
@@ -22,24 +22,24 @@ function formatDate(value: string): string {
     return date.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' })
 }
 
-const columns: TableColumn<ProductionRecord>[] = [
+const columns: TableColumn<ProductionList>[] = [
     {
-        accessorKey: 'date',
+        accessorKey: 'created_at',
         header: 'Date',
-        cell: ({ row }) => formatDate(row.original.date),
+        cell: ({ row }) => formatDate(row.original.created_at),
     },
     {
-        accessorKey: 'productName',
+        accessorKey: 'product_name',
         header: 'Product Name',
         meta: { class: { td: 'font-medium text-neutral-900 dark:text-white' } },
     },
     {
-        accessorKey: 'quantityProduced',
+        accessorKey: 'quantity_produced',
         header: 'Quantity Produced',
         meta: { class: { td: 'text-sm text-neutral-900 dark:text-neutral-100' } },
     },
     {
-        accessorKey: 'producedBy',
+        accessorKey: 'produced_by_name',
         header: 'Produced by',
         meta: { class: { td: 'text-sm text-neutral-700 dark:text-neutral-200' } },
     },

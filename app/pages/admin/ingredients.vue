@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { ingredients, type Ingredient } from '~/data/ingredients'
+import type { Inventory } from '~/types/inventory'
 
-const selectedIngredient = ref<Ingredient | null>(null)
+const inventoryStore = useInventoryStore()
+
+const selectedIngredient = ref<Inventory | null>(null)
 
 const showAddEditIngredientModal = ref(false)
 const showDeleteIngredientModal = ref(false)
@@ -16,16 +18,16 @@ function closeAddEditIngredientModal() {
   selectedIngredient.value = null
 }
 
-function openAddEditIngredientModal(ingredient?: Ingredient) {
+function openAddEditIngredientModal(ingredient?: Inventory | null) {
   selectedIngredient.value = ingredient ?? null
   showAddEditIngredientModal.value = true
 }
 
-function onEditIngredient(ingredient: Ingredient) {
+function onEditIngredient(ingredient: Inventory) {
   openAddEditIngredientModal(ingredient)
 }
 
-function openDeleteIngredientModal(ingredient: Ingredient) {
+function openDeleteIngredientModal(ingredient: Inventory) {
   selectedIngredient.value = ingredient
   showDeleteIngredientModal.value = true
 }
@@ -37,36 +39,13 @@ function closeDeleteIngredientModal() {
 
 function deleteIngredient() {
   if (!selectedIngredient.value) return
-  const index = ingredients.value.findIndex((i) => i.id === selectedIngredient.value!.id)
-  if (index !== -1) {
-    ingredients.value.splice(index, 1)
-  }
+  inventoryStore.deleteIngredient(selectedIngredient.value.id)
   closeDeleteIngredientModal()
 }
 
-function onSaveIngredient(payload: Partial<Ingredient> & { name: string; quantity: number; unit: string }) {
-  if (payload.id != null) {
-    const index = ingredients.value.findIndex((i) => i.id === payload.id)
-    const existing = index !== -1 ? ingredients.value[index] : undefined
-    if (existing) {
-      ingredients.value[index] = {
-        id: existing.id,
-        name: payload.name,
-        quantity: payload.quantity,
-        unit: payload.unit,
-      }
-    }
-  } else {
-    const nextId = Math.max(0, ...ingredients.value.map((i) => i.id)) + 1
-    ingredients.value.push({
-      id: nextId,
-      name: payload.name,
-      quantity: payload.quantity,
-      unit: payload.unit,
-    })
-  }
-  closeAddEditIngredientModal()
-}
+onMounted(async () => {
+  await callOnce("getIngredients", () => inventoryStore.getIngredients())
+})
 </script>
 
 <template>
@@ -80,22 +59,23 @@ function onSaveIngredient(payload: Partial<Ingredient> & { name: string; quantit
 
     <!-- Add ingredient button -->
     <div class="flex flex-wrap items-end gap-3 mb-5!">
-      <UButton class="ml-auto" color="primary" variant="subtle" icon="i-lucide-plus" @click="addIngredient">
+      <UButton class="ml-auto" color="primary" variant="subtle" icon="i-lucide-plus" :loading="inventoryStore.loading"
+        @click="addIngredient">
         Add Ingredient
       </UButton>
     </div>
 
     <!-- Ingredients table -->
-    <AdminIngredientsTableComponent :ingredients="ingredients" @edit="onEditIngredient"
+    <AdminIngredientsTableComponent :ingredients="inventoryStore.ingredients" @edit="onEditIngredient"
       @delete="openDeleteIngredientModal" />
 
     <!-- Add / Edit ingredient modal -->
     <AdminIngredientsAddEditIngredient v-if="showAddEditIngredientModal" :open="showAddEditIngredientModal"
-      :ingredient="selectedIngredient" @close="closeAddEditIngredientModal" @save="onSaveIngredient" />
+      :ingredient="selectedIngredient" @close="closeAddEditIngredientModal" />
 
     <!-- Delete ingredient modal -->
     <SharedPromptCard v-if="showDeleteIngredientModal" :open="showDeleteIngredientModal" :title="`Delete Ingredient`"
-      :description="`Are you sure you want to delete ${selectedIngredient?.name}?`" :buttonText="`Delete`"
-      :type="`error`" @close="closeDeleteIngredientModal" @confirm="deleteIngredient" />
+      :description="`Are you sure you want to delete ${selectedIngredient?.name}?`" :button-text="`Delete`" type="error"
+      @close="closeDeleteIngredientModal" @confirm="deleteIngredient" />
   </div>
 </template>
