@@ -9,7 +9,7 @@ const lowStockCount = 0
 const quickLinks = [
   { label: 'Add Products', to: '/admin/products', icon: 'i-lucide-plus-circle', color: 'primary' as const },
   { label: 'View Orders', to: '/admin/orders', icon: 'i-lucide-clipboard-list', color: 'info' as const },
-  { label: 'Enter Kitchen', to: '/admin/orders', icon: 'i-lucide-utensils-crossed', color: 'success' as const },
+  { label: 'Enter Kitchen', to: '/admin/production', icon: 'i-lucide-utensils-crossed', color: 'success' as const },
   { label: 'Add Ingredient', to: '/admin/ingredients', icon: 'i-lucide-warehouse', color: 'warning' as const },
 ]
 </script>
@@ -17,7 +17,7 @@ const quickLinks = [
 <template>
   <div class="space-y-8">
     <h1 class="text-2xl font-semibold text-neutral-900 dark:text-white">
-      Dashboard - {{ shopStore.selectedShop?.label }}
+      Dashboard - {{ shopStore.selectedShop?.name }}
     </h1>
 
     <!-- Stats -->

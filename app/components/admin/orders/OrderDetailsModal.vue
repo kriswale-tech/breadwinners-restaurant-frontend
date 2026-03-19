@@ -1,87 +1,139 @@
 <script setup lang="ts">
-import type { Order, OrderStatus } from '~/data/order'
-import { statusBadgeColor } from '~/data/order'
+import type { OrderDetail, OrderItem, OrderStatus } from '~/types/orders'
 import type { TableColumn } from '@nuxt/ui'
+
+const toast = useToast()
+const orderStore = useOrderStore()
 
 const props = defineProps<{
     open: boolean
-    orderId: string | null
-    orders: Order[]
+    orderId: number | null
 }>()
 
 const emit = defineEmits<{
     'update:open': [value: boolean]
-    'update-status': [payload: { orderId: string; status: OrderStatus }]
+    'update-status': [payload: { orderId: number; status: OrderStatus }]
 }>()
 
-const order = computed(() =>
-    props.orderId ? props.orders.find((o) => o.orderId === props.orderId) ?? null : null
-)
+const order = ref<OrderDetail | null>(null)
+const loading = ref(false)
+const loadFailed = ref(false)
 
-const itemsWithTotal = computed(() => {
-    const o = order.value
-    if (!o?.items?.length) return []
-    return o.items.map((i) => ({
-        name: i.name,
-        unitPrice: i.unitPrice,
-        quantity: i.quantity,
-        total: i.unitPrice * i.quantity,
-    }))
-})
+const statusBadgeColor: Record<OrderStatus, 'warning' | 'info' | 'error' | 'success' | 'neutral'> = {
+    pending: 'warning',
+    confirmed: 'neutral',
+    cancelled: 'error',
+    done: 'info',
+    delivered: 'success',
+}
 
-const orderTotal = computed(() => order.value?.amount ?? 0)
+function statusLabel(status: OrderStatus): string {
+    return status.charAt(0).toUpperCase() + status.slice(1)
+}
 
-const statusOptions: { label: OrderStatus; color: 'warning' | 'info' | 'error' | 'success' | 'neutral' }[] = [
-    { label: 'Pending', color: 'warning' },
-    { label: 'Confirmed', color: 'neutral' },
-    { label: 'Cancelled', color: 'error' },
-    { label: 'Done', color: 'info' },
-    { label: 'Delivered', color: 'success' },
-]
+const orderTotal = computed(() => Number(order.value?.total_amount ?? 0))
+
+const statusOptions: { label: string; value: OrderStatus; color: 'warning' | 'info' | 'error' | 'success' | 'neutral' }[] =
+    [
+        { label: statusLabel('pending'), value: 'pending', color: statusBadgeColor.pending },
+        { label: statusLabel('confirmed'), value: 'confirmed', color: statusBadgeColor.confirmed },
+        { label: statusLabel('cancelled'), value: 'cancelled', color: statusBadgeColor.cancelled },
+        { label: statusLabel('done'), value: 'done', color: statusBadgeColor.done },
+        { label: statusLabel('delivered'), value: 'delivered', color: statusBadgeColor.delivered },
+    ]
 
 function setStatus(status: OrderStatus) {
-    if (order.value) {
-        emit('update-status', { orderId: order.value.orderId, status })
-    }
+    if (order.value) emit('update-status', { orderId: order.value.id, status })
 }
 
 function close() {
     emit('update:open', false)
 }
 
-const itemColumns: TableColumn<{ name: string; unitPrice: number; quantity: number; total: number }>[] = [
-    { accessorKey: 'name', header: 'Product' },
+watch(
+    () => [props.open, props.orderId],
+    async () => {
+        if (!props.open || props.orderId == null) {
+            order.value = null
+            loadFailed.value = false
+            return
+        }
+
+        loading.value = true
+        loadFailed.value = false
+        try {
+            const result = await orderStore.getOrderDetail(props.orderId)
+            order.value = result ?? null
+            if (!result) loadFailed.value = true
+        } catch {
+            loadFailed.value = true
+        } finally {
+            loading.value = false
+        }
+    },
+    { immediate: true },
+)
+
+function formatDateTime(value: string): string {
+    const d = new Date(value)
+    if (Number.isNaN(d.getTime())) return value
+    return d.toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short', hour12: false })
+}
+
+function formatMoney(value: string | number): string {
+    return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'GHS' }).format(Number(value))
+}
+
+const itemColumns: TableColumn<OrderItem>[] = [
     {
-        accessorKey: 'unitPrice',
+        accessorKey: 'product_name',
+        header: 'Product',
+        cell: ({ row }) => row.original.product_name ?? `#${row.original.product}`,
+    },
+    {
+        accessorKey: 'unit_price',
         header: 'Unit price',
-        meta: { class: { td: 'text-right' } },
-        cell: ({ row }) =>
-            new Intl.NumberFormat('en-US', { style: 'currency', currency: 'GHS' }).format(row.getValue('unitPrice')),
+        meta: { class: { th: 'text-right', td: 'text-right' } },
+        cell: ({ row }) => formatMoney(row.original.unit_price),
     },
     {
         accessorKey: 'quantity',
         header: 'Qty',
-        meta: { class: { td: 'text-right' } }
+        meta: { class: { th: 'text-right', td: 'text-right' } },
     },
     {
-        accessorKey: 'total',
+        accessorKey: 'total_price',
         header: 'Total',
         meta: { class: { th: 'text-right', td: 'text-right font-medium' } },
-        cell: ({ row }) =>
-            new Intl.NumberFormat('en-US', { style: 'currency', currency: 'GHS' }).format(row.getValue('total')),
+        cell: ({ row }) => formatMoney(row.original.total_price),
     },
 ]
+
+function copyToClipboard(lat: string | number, lng: string | number) {
+    navigator.clipboard.writeText(`https://www.google.com/maps/search/?api=1&query=${lat},${lng}`)
+    toast.add({
+        title: 'Copied to clipboard',
+        color: 'success',
+    })
+}
 </script>
 
 <template>
-    <UModal :open="open" :title="order ? `Order #${order.orderId} - ${order.shop}` : 'Order details'" scrollable
-        :ui="{ content: 'w-[calc(100vw-2rem)] max-w-3xl' }" @update:open="emit('update:open', $event)">
+    <UModal :open="open" :title="order ? `Order #${order.order_number} - ${order.shop.name}` : 'Order details'"
+        scrollable :ui="{ content: 'w-[calc(100vw-2rem)] max-w-3xl' }" @update:open="emit('update:open', $event)">
         <!-- No trigger: modal is opened programmatically from table row click -->
         <template #default>
             <span class="hidden" aria-hidden="true" />
         </template>
         <template #body>
-            <div v-if="order" class="space-y-6">
+            <div v-if="loading"
+                class="flex items-center justify-center py-10 text-sm text-neutral-500 dark:text-neutral-400">
+                Loading...
+            </div>
+            <div v-else-if="loadFailed" class="py-10 text-center text-sm text-neutral-500 dark:text-neutral-400">
+                Failed to load order details.
+            </div>
+            <div v-else-if="order" class="space-y-6">
                 <!-- Top row: customer + delivery -->
                 <div class="grid gap-6 md:grid-cols-2">
                     <!-- Customer -->
@@ -90,13 +142,38 @@ const itemColumns: TableColumn<{ name: string; unitPrice: number; quantity: numb
                             Customer
                         </h3>
                         <ul class="text-sm text-neutral-600 dark:text-neutral-400 space-y-1">
-                            <li>{{ order.customerName }}</li>
-                            <li>{{ order.phoneNumber }}</li>
-                            <li v-if="order.email">
-                                {{ order.email }}
+                            <li>{{ order.customer_name }}</li>
+                            <li>{{ order.customer_phone }}</li>
+                            <li v-if="order.email">{{ order.email }}</li>
+                            <li v-if="order.delivery_notes">Delivery notes: {{ order.delivery_notes }}</li>
+                        </ul>
+                    </section>
+
+                    <!-- Order info -->
+                    <section>
+                        <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
+                            Order info
+                        </h3>
+                        <ul class="text-sm text-neutral-600 dark:text-neutral-400 space-y-1">
+                            <li>Order ID: #{{ order.order_number }}</li>
+                            <li>
+                                Time:
+                                {{
+                                    formatDateTime(order.created_at)
+                                }}
+                            </li>
+                            <li>
+                                Last updated:
+                                {{
+                                    formatDateTime(order.updated_at)
+                                }}
                             </li>
                         </ul>
                     </section>
+
+                </div>
+
+                <div class="grid gap-6 md:grid-cols-2">
 
                     <!-- Delivery -->
                     <section>
@@ -105,39 +182,21 @@ const itemColumns: TableColumn<{ name: string; unitPrice: number; quantity: numb
                         </h3>
                         <ul class="text-sm text-neutral-600 dark:text-neutral-400 space-y-1">
                             <li class="capitalize">
-                                Type: {{ order.deliveryType ?? 'Pickup' }}
+                                Type: {{ order.delivery_method }}
                             </li>
-                            <li v-if="order.deliveryType === 'delivery' && order.address">
-                                Address: {{ order.address }}
+                            <li v-if="order.delivery_method === 'delivery' && order.delivery_address">
+                                Address: {{ order.delivery_address }}
                             </li>
-                            <li v-if="order.deliveryType === 'delivery' && order.coordinates">
-                                Coordinates:
-                                {{ order.coordinates.lat }}, {{ order.coordinates.lng }}
-                            </li>
-                        </ul>
-                    </section>
-                </div>
-
-                <div class="grid gap-6 md:grid-cols-2">
-                    <!-- Order info -->
-                    <section>
-                        <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
-                            Order info
-                        </h3>
-                        <ul class="text-sm text-neutral-600 dark:text-neutral-400 space-y-1">
-                            <li>Order ID: #{{ order.orderId }}</li>
-                            <li>
-                                Time:
-                                {{
-                                    new Date(order.date).toLocaleString('en-US', {
-                                        dateStyle: 'medium',
-                                        timeStyle: 'short',
-                                        hour12: false
-                                    })
-                                }}
-                            </li>
-                            <li v-if="order.deliveryNotes">
-                                Delivery notes: {{ order.deliveryNotes }}
+                            <li v-if="order.delivery_method === 'delivery' && order.address_latitude != null && order.address_longitude != null"
+                                class="flex items-center gap-2">
+                                Address link:
+                                <a :href="`https://www.google.com/maps/search/?api=1&query=${order.address_latitude},${order.address_longitude}`"
+                                    target="_blank" class="text-blue-500 hover:text-blue-600">
+                                    View on Google Maps
+                                </a>
+                                <!-- copy to clipboard button -->
+                                <UButton size="sm" color="neutral" variant="ghost" icon="lucide:copy"
+                                    @click="copyToClipboard(order.address_latitude, order.address_longitude)" />
                             </li>
                         </ul>
                     </section>
@@ -148,25 +207,27 @@ const itemColumns: TableColumn<{ name: string; unitPrice: number; quantity: numb
                             Order status
                         </h3>
                         <p class="text-sm text-neutral-600 dark:text-neutral-400">
-                            <UBadge :color="statusBadgeColor[order.status]" :label="order.status" />
+                            <UBadge :color="statusBadgeColor[order.status]" :label="statusLabel(order.status)" />
                         </p>
                     </section>
                 </div>
+
+                <!-- Total -->
+                <section>
+                    <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
+                        Total
+                    </h3>
+                    <p class="mt-2 text-right text-sm font-semibold text-neutral-900 dark:text-white">
+                        Total: {{ formatMoney(orderTotal) }}
+                    </p>
+                </section>
 
                 <!-- Items -->
                 <section>
                     <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
                         Items
                     </h3>
-                    <UTable v-if="itemsWithTotal.length" :data="itemsWithTotal" :columns="itemColumns" class="w-full" />
-                    <p v-else class="text-sm text-neutral-500">
-                        No items listed.
-                    </p>
-                    <p class="mt-2 text-right text-sm font-semibold text-neutral-900 dark:text-white">
-                        Total: {{ new Intl.NumberFormat('en-US', {
-                            style: 'currency', currency: 'GHS'
-                        }).format(orderTotal) }}
-                    </p>
+                    <UTable :data="order.items" :columns="itemColumns" class="w-full" />
                 </section>
 
                 <!-- Status actions -->
@@ -175,9 +236,9 @@ const itemColumns: TableColumn<{ name: string; unitPrice: number; quantity: numb
                         Change status
                     </h3>
                     <div class="flex flex-wrap gap-2">
-                        <UButton v-for="opt in statusOptions" :key="opt.label" :color="opt.color" variant="soft"
-                            size="sm" :label="opt.label" :disabled="order.status === opt.label"
-                            @click="setStatus(opt.label)" />
+                        <UButton v-for="opt in statusOptions" :key="opt.value" :color="opt.color" variant="soft"
+                            size="sm" :label="opt.label" :disabled="order.status === opt.value"
+                            @click="setStatus(opt.value)" />
                     </div>
                 </section>
             </div>

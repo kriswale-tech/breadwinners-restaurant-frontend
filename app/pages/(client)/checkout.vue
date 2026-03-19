@@ -1,8 +1,4 @@
 <script setup lang="ts">
-/**
- * Checkout Page
- * Displays customer information form and order summary side by side
- */
 
 import type { CustomerFormData } from '~/components/checkout/CustomerInfo.vue'
 
@@ -79,10 +75,8 @@ const handleMakePayment = () => {
 <template>
     <div class="container mx-auto px-4 py-32 min-h-screen">
         <!-- Empty cart state -->
-        <div
-            v-if="cartStore.items.length === 0"
-            class="flex flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50/50 px-6 py-16 text-center dark:border-neutral-700 dark:bg-neutral-800/30"
-        >
+        <div v-if="cartStore.items.length === 0"
+            class="flex flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50/50 px-6 py-16 text-center dark:border-neutral-700 dark:bg-neutral-800/30">
             <div class="mb-4 flex size-20 items-center justify-center rounded-full bg-neutral-200 dark:bg-neutral-700">
                 <Icon name="heroicons:shopping-cart" class="size-10 text-neutral-500 dark:text-neutral-400" />
             </div>
@@ -92,13 +86,7 @@ const handleMakePayment = () => {
             <p class="mt-2 max-w-sm text-neutral-600 dark:text-neutral-400">
                 Add something delicious from our menu, then come back here to complete your order.
             </p>
-            <UButton
-                to="/"
-                size="lg"
-                color="primary"
-                class="mt-8"
-                icon="heroicons:arrow-left"
-            >
+            <UButton to="/" size="lg" color="primary" class="mt-8" icon="heroicons:arrow-left">
                 Back to home
             </UButton>
         </div>

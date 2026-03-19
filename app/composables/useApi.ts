@@ -15,7 +15,10 @@ export const useApi = () => {
   const del = <T>(url: string, opts?: FetchOptions) =>
     $api<T>(url, { ...(opts || {}), method: 'DELETE' })
 
-  return { get, post, put, del }
+  const patch = <T>(url: string, body?: Record<string, any>, opts?: FetchOptions) =>
+    $api<T>(url, { ...(opts || {}), method: 'PATCH', body })
+
+  return { get, post, put, del, patch }
 }
 
 

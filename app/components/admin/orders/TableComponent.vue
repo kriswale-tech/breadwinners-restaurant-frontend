@@ -1,24 +1,60 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import { type Order, type OrderStatus, statusBadgeColor } from '~/data/order'
+import type { Order, OrderStatus } from '~/types/orders'
+
+const orderStore = useOrderStore()
 
 const UBadge = resolveComponent('UBadge')
 const UButton = resolveComponent('UButton')
 const UDropdownMenu = resolveComponent('UDropdownMenu')
 
-const props = withDefaults(
-    defineProps<{
-        data?: Order[],
-        loading?: boolean
-    }>(),
-    { data: () => [] }
-)
+const props = defineProps<{
+    data?: Order[]
+    loading?: boolean
+}>()
 
 const emit = defineEmits<{
-    'update-status': [payload: { orderId: string; status: OrderStatus }]
-    'select-order': [orderId: string]
+    'update-status': [payload: { orderId: number; status: OrderStatus }]
+    'select-order': [orderId: number]
 }>()
+
+const statusBadgeColor: Record<OrderStatus, 'warning' | 'info' | 'error' | 'success' | 'neutral'> = {
+    pending: 'warning',
+    confirmed: 'neutral',
+    cancelled: 'error',
+    done: 'info',
+    delivered: 'success',
+}
+
+function statusLabel(status: OrderStatus): string {
+    return status.charAt(0).toUpperCase() + status.slice(1)
+}
+
+const statusDropdownOptions: {
+    label: string
+    value: OrderStatus
+    color: 'warning' | 'info' | 'error' | 'success' | 'neutral'
+}[] = [
+        { label: statusLabel('pending'), value: 'pending', color: statusBadgeColor.pending },
+        { label: statusLabel('confirmed'), value: 'confirmed', color: statusBadgeColor.confirmed },
+        { label: statusLabel('cancelled'), value: 'cancelled', color: statusBadgeColor.cancelled },
+        { label: statusLabel('done'), value: 'done', color: statusBadgeColor.done },
+        { label: statusLabel('delivered'), value: 'delivered', color: statusBadgeColor.delivered },
+    ]
+
+// Fetch orders in this component
+onMounted(() => {
+    orderStore.getOrders()
+})
+
+const tableData = computed(() => {
+    // If parent passes filtered data, prefer it; otherwise, fall back to store.
+    if (props.data) return props.data
+    return orderStore.orders
+})
+
+const tableLoading = computed(() => props.loading ?? orderStore.loading)
 
 // pagination info
 const page = ref(1)
@@ -26,18 +62,10 @@ const itemsPerPage = 10
 
 const paginatedData = computed(() => {
     const start = (page.value - 1) * itemsPerPage
-    return props.data.slice(start, start + itemsPerPage)
+    return tableData.value.slice(start, start + itemsPerPage)
 })
 
-const total = computed(() => props.data.length)
-
-const statusDropdownOptions: { label: OrderStatus; color: 'warning' | 'info' | 'error' | 'success' | 'neutral' }[] = [
-    { label: 'Pending', color: 'warning' },
-    { label: 'Confirmed', color: 'neutral' },
-    { label: 'Cancelled', color: 'error' },
-    { label: 'Done', color: 'info' },
-    { label: 'Delivered', color: 'success' },
-]
+const total = computed(() => tableData.value.length)
 
 const columns: TableColumn<Order>[] = [
     {
@@ -52,19 +80,19 @@ const columns: TableColumn<Order>[] = [
                 variant: 'ghost',
                 size: 'sm',
                 'aria-label': 'View details',
-                onClick: () => emit('select-order', row.original.orderId),
+                onClick: () => emit('select-order', row.original.id),
             }),
     },
     {
-        accessorKey: 'orderId',
-        header: 'Order ID',
-        cell: ({ row }) => `#${row.getValue('orderId')}`,
+        accessorKey: 'order_number',
+        header: 'Order #',
+        cell: ({ row }) => `#${row.getValue('order_number')}`,
     },
     {
-        accessorKey: 'date',
+        accessorKey: 'created_at',
         header: 'Date',
         cell: ({ row }) =>
-            new Date(row.getValue('date')).toLocaleDateString('en-US', {
+            new Date(row.getValue('created_at')).toLocaleDateString('en-US', {
                 day: 'numeric',
                 month: 'short',
                 year: 'numeric',
@@ -79,29 +107,29 @@ const columns: TableColumn<Order>[] = [
         cell: ({ row }) => {
             const status = row.getValue('status') as OrderStatus
             const color = statusBadgeColor[status]
-            return h(UBadge, { variant: 'subtle', color, class: 'capitalize' }, () => status)
+            return h(UBadge, { variant: 'subtle', color }, () => statusLabel(status))
         },
     },
     {
-        accessorKey: 'phoneNumber',
+        accessorKey: 'customer_phone',
         header: 'Phone Number',
     },
     {
-        accessorKey: 'customerName',
+        accessorKey: 'customer_name',
         header: 'Customer Name',
     },
     {
-        accessorKey: 'amount',
+        accessorKey: 'total_amount',
         header: 'Amount',
         meta: { class: { th: 'text-right', td: 'text-right font-medium' } },
         cell: ({ row }) =>
             new Intl.NumberFormat('en-US', { style: 'currency', currency: 'GHS' }).format(
-                Number(row.getValue('amount'))
+                Number(row.getValue('total_amount')),
             ),
     },
     {
-        accessorKey: 'shop',
-        header: 'Shop',
+        accessorKey: 'delivery_method',
+        header: 'Delivery Type',
     },
     {
         id: 'actions',
@@ -109,13 +137,12 @@ const columns: TableColumn<Order>[] = [
         enableSorting: false,
         meta: { class: { td: 'w-12 text-right' } },
         cell: ({ row }) => {
-            const orderId = row.original.orderId
+            const orderId = row.original.id
             const items = statusDropdownOptions.map((opt) => ({
                 label: opt.label,
-                // icon: 'i-lucide-circle',
                 color: opt.color,
                 onSelect() {
-                    emit('update-status', { orderId, status: opt.label })
+                    emit('update-status', { orderId, status: opt.value })
                 },
             }))
             return h(
@@ -132,7 +159,7 @@ const columns: TableColumn<Order>[] = [
                         variant: 'ghost',
                         size: 'sm',
                         'aria-label': 'Actions',
-                    })
+                    }),
             )
         },
     },
@@ -141,7 +168,8 @@ const columns: TableColumn<Order>[] = [
 
 <template>
     <div class="space-y-4">
-        <UTable :data="paginatedData" :columns="columns" :loading="loading" loading-animation="swing" class="w-full" />
+        <UTable :data="paginatedData" :columns="columns" :loading="tableLoading" loading-animation="swing"
+            class="w-full" />
         <div class="flex justify-end">
             <UPagination v-model:page="page" :total="total" :items-per-page="itemsPerPage" :sibling-count="1"
                 show-edges />

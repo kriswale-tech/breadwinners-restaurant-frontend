@@ -50,8 +50,8 @@ const validate = {
         if (!value?.trim()) {
             return 'Phone number is required'
         }
-        if (!/^[0-9+\-\s()]+$/.test(value)) {
-            return 'Please enter a valid phone number'
+        if (!/^0\d{9}$/.test(value)) {
+            return 'Please enter a valid phone number (should be of format 0XXXXXXXXX. 10 digits long)'
         }
         return true
     },
@@ -125,9 +125,21 @@ const getFormData = (): CustomerFormData => ({
     coordinates: state.coordinates ? { ...state.coordinates } : undefined
 })
 
-// Expose form data and validation function
+// reset form
+const resetForm = () => {
+    state.name = ''
+    state.phone = ''
+    state.email = ''
+    state.deliveryType = 'delivery'
+    state.address = ''
+    state.coordinates = undefined
+    state.notes = ''
+}
+
+// Expose form data and validation function for parent component
 defineExpose({
     form,
+    resetForm,
     getFormData,
     validateForm,
     showValidationErrors,
@@ -149,13 +161,15 @@ defineExpose({
             </UFormField>
 
             <!-- Phone Number Field -->
-            <UFormField label="Phone Number" name="phone" :error="getError('phone')" required>
-                <UInput v-model="state.phone" type="tel" placeholder="Enter your phone number" size="lg"
-                    class="w-full" />
+            <UFormField label="Phone Number" name="phone" :error="getError('phone')" required
+                description="We'll use this to contact you about your order. You can also track your order status with this number.">
+                <UInput v-model="state.phone" type="tel" placeholder="Should be of format 0XXXXXXXXX" size="lg"
+                    class="w-full" pattern="^0[0-9]{9}$" />
             </UFormField>
 
             <!-- Email Field (Optional) -->
-            <UFormField label="Email Address (Optional)" name="email" :error="getError('email')">
+            <UFormField label="Email Address (Optional)" name="email" :error="getError('email')"
+                description="We'll send updates about your order to this email.">
                 <UInput v-model="state.email" type="email" placeholder="Enter your email address (optional)" size="lg"
                     class="w-full" />
             </UFormField>

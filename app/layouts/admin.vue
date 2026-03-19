@@ -11,10 +11,10 @@ if (!authStore.isLoggedIn) {
     <div>
         <UApp>
             <div class="flex ">
-                <div class="w-64 shrink-0 h-screen">
+                <div class="w-64 shrink-0 h-screen fixed">
                     <AdminSidebarComponent />
                 </div>
-                <div class="flex-1 min-w-0">
+                <div class="flex-1 min-w-0 ml-64">
                     <AdminNavbar />
                     <div class=" py-8 container">
                         <slot />
