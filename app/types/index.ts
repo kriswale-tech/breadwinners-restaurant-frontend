@@ -6,6 +6,8 @@ export interface Shop {
     description: string
     createdAt: string
     updatedAt: string
+    is_active: boolean
+    slug: string
 }
 
 export interface Profile {

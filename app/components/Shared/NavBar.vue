@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { ref, onMounted, onBeforeUnmount, computed } from 'vue'
 
+const shopStore = useShopStore()
+
 const isScrolled = ref(false)
 
 let raf = 0
@@ -42,6 +44,12 @@ const linkClass = computed(() =>
     ? 'flex items-center gap-2 text-sm font-medium text-primary-900 dark:text-white transition'
     : 'flex items-center gap-2 text-sm font-medium text-gray-700 transition dark:text-gray-300'
 )
+
+onMounted(async () => {
+  await callOnce('getShops', () => {
+    shopStore.getShops()
+  })
+})
 </script>
 
 <template>
@@ -55,14 +63,12 @@ const linkClass = computed(() =>
 
       <!-- Center: BreadWinners & Restaurant -->
       <div class="flex items-center gap-8">
-        <NuxtLink :to="'/breadwinners'" :class="linkClass">
-          <Icon name="lucide:croissant" class="size-5" />
-          <span>Bread Winners</span>
-        </NuxtLink>
-        <NuxtLink :to="'/restaurant'" :class="linkClass">
-          <Icon name="heroicons:building-storefront" class="size-5" />
-          <span>Restaurant</span>
-        </NuxtLink>
+        <template v-for="shop in shopStore.shops" :key="shop.id">
+          <NuxtLink :to="`/${shop.slug}/${shop.id}`" :class="linkClass">
+            <Icon name="heroicons:building-storefront" class="size-5" />
+            <span class="capitalize">{{ shop.name }}</span>
+          </NuxtLink>
+        </template>
       </div>
 
       <!-- Right: Track order -->
