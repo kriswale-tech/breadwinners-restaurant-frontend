@@ -41,7 +41,7 @@ function addProduct() {
 
 <template>
     <form @submit.prevent="addProduct" class="flex w-full items-start gap-3">
-        <UFormField label="Product" name="product" required class="flex-[2] min-w-0" :error="productError">
+        <UFormField label="Product" name="product" required class="flex-2 min-w-0" :error="productError">
             <USelectMenu v-model="productId" :items="productOptions" value-key="value" placeholder="Select product"
                 class="w-full" />
         </UFormField>
