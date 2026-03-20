@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const route = useRoute()
 const shopStore = useShopStore()
-
+const clientProductStore = useClientProductStore()
 const shop = computed(() => shopStore.shops.find(shop => shop.id === Number(route.params.id)))
 
 
@@ -27,10 +27,20 @@ const tabs = [
 
 const activeTab = ref('')
 
+watch(route, () => {
+    activeTab.value = route.path.split('/').pop() || ''
+}, { immediate: true })
+
 function onTabChange(value: string | number) {
     activeTab.value = value as string
-    navigateTo(`/breadwinners/1/${value}`)
+    navigateTo(`/${route.params.shop_slug}/${route.params.id}/${value}`)
 }
+
+onMounted(async () => {
+    await callOnce('fetch-shop-categories', () => clientProductStore.fetchShopCategories(Number(route.params.id)))
+    await callOnce('fetch-shop-products', () => clientProductStore.fetchProducts(Number(route.params.id)))
+    await callOnce('fetch-shop-packages', () => clientProductStore.fetchShopPackages(Number(route.params.id)))
+})
 
 
 

@@ -1,9 +1,16 @@
 import type { OrderItem } from "~/data/order"
-import type { Product } from "~/types/products"
+import type { Product, ProductPackage } from "~/types/products"
 import type { OrderCreatePayload, Order, OrderDetail, OrderStatistics } from "~/types/orders"
 import type { ErrorResponse } from "~/types/error"
 export interface OrderItemType extends Product {
+    value: string
     quantity: number
+    item_type?: 'product' | 'package'
+}
+export interface OrderItemType2 extends ProductPackage {
+    value: string
+    quantity: number
+    item_type?: 'product' | 'package'
 }
 
 export const useOrderStore = defineStore('order', () => {
@@ -14,18 +21,18 @@ export const useOrderStore = defineStore('order', () => {
     const loading = ref(false)
     const orderStatistics = ref<OrderStatistics | null>(null)
     //  ========================= CART ORDER OPERATIONS =========================
-    const itemsInCart = ref<OrderItemType[]>([])
+    const itemsInCart = ref<(OrderItemType | OrderItemType2)[]>([])
 
     const totalPrice = computed(() => {
         return itemsInCart.value.reduce((sum, item) => sum + (typeof item.price === 'string' ? parseFloat(item.price) : item.price) * item.quantity, 0)
     })
 
-    function addToCart(product: Product, quantity = 1) {
-        const existing = itemsInCart.value.find(item => item.id === product.id)
+    function addToCart(product: OrderItemType | OrderItemType2) {
+        const existing = itemsInCart.value.find(item => item.value === product.value)
         if (existing) {
-            existing.quantity += quantity
+            existing.quantity += product.quantity
         } else {
-            itemsInCart.value.push({ ...product, quantity })
+            itemsInCart.value.push(product)
         }
     }
 
@@ -33,8 +40,8 @@ export const useOrderStore = defineStore('order', () => {
         itemsInCart.value = []
     }
 
-    function removeProduct(productId: number) {
-        itemsInCart.value = itemsInCart.value.filter(item => item.id !== productId)
+    function removeProduct(productId: string) {
+        itemsInCart.value = itemsInCart.value.filter(item => item.value !== productId)
     }
 
     //  ========================= ORDER OPERATIONS =========================

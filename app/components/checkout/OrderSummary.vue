@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import type { OrderItemType, OrderItemType2 } from '~/stores/order-store'
+import type { CartItemType } from '~/stores/cart-store'
+
 /**
  * OrderSummary Component
  * Displays order items and total with Make Payment button
@@ -6,7 +9,7 @@
 const cartStore = useCartStore()
 
 const props = defineProps<{
-    items?: OrderItemType[]
+    items?: (OrderItemType | OrderItemType2)[]
     totalPrice?: number
     buttonLabel?: string
     allowClear?: boolean
@@ -21,7 +24,7 @@ const totalPrice = computed(() => props.totalPrice?.toFixed(2) ?? cartStore.tota
 const emit = defineEmits<{
     (e: 'make-payment'): void
     (e: 'clear-products'): void
-    (e: 'remove-product', payload: number): void
+    (e: 'remove-product', payload: string): void
 }>()
 
 // Computed formatted total
@@ -36,7 +39,7 @@ const handleClearProducts = () => {
     emit('clear-products')
 }
 
-const handleRemoveProduct = (productId: number) => {
+const handleRemoveProduct = (productId: string) => {
     emit('remove-product', productId)
 }
 </script>
@@ -75,7 +78,7 @@ const handleRemoveProduct = (productId: number) => {
                         </div>
                         <div class="" v-if="allowClear">
                             <UButton size="sm" color="error" variant="soft" icon="heroicons:trash"
-                                @click="handleRemoveProduct(item.id)" />
+                                @click="handleRemoveProduct((item as OrderItemType | OrderItemType2).value)" />
                         </div>
                     </div>
                 </div>

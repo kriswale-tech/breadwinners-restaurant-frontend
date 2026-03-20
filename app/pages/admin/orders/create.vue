@@ -23,6 +23,23 @@ const resetCustomerInfo = () => {
 }
 
 const buildOrderPayload = (formData: CustomerFormData) => {
+    // separate products and packages
+    const products = orderStore.itemsInCart.filter(item => item.item_type === 'product').map(item => ({
+        product: item.id,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: typeof item.price === 'string' ? parseFloat(item.price) : item.price * item.quantity,
+    }))
+    const packages = orderStore.itemsInCart.filter(item => item.item_type === 'package').map(item => ({
+        package: item.id,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: typeof item.price === 'string' ? parseFloat(item.price) : item.price * item.quantity,
+    }))
+    console.log('Products in Cart:', JSON.stringify(orderStore.itemsInCart, null, 2))
+    const items = [...products, ...packages]
+    console.log('Items to be sent:', JSON.stringify(items, null, 2))
+
     return {
         customer_name: formData.name,
         customer_phone: formData.phone,
@@ -33,12 +50,7 @@ const buildOrderPayload = (formData: CustomerFormData) => {
         address_longitude: formData.coordinates?.lng,
         delivery_notes: formData.notes,
         email: formData.email,
-        items: orderStore.itemsInCart.map(item => ({
-            product: item.id,
-            quantity: item.quantity,
-            unit_price: item.price,
-            total_price: typeof item.price === 'string' ? parseFloat(item.price) : item.price * item.quantity,
-        })),
+        items: items,
     }
 }
 

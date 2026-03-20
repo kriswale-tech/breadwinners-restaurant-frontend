@@ -1,17 +1,26 @@
 <script setup lang="ts">
 const productStore = useProductStore()
 const orderStore = useOrderStore()
-const productId = ref<number | undefined>(undefined)
+const productId = ref<string | undefined>(undefined)
 const quantityOrdered = ref<number | null>(null)
 const productError = ref<string | boolean>(false)
 const quantityError = ref<string | boolean>(false)
 
-const productOptions = computed(() =>
-    productStore.products.map((p) => ({
-        label: p.name,
-        value: p.id,
-    })),
-)
+const productOptions = computed(() => {
+    const packages = productStore.packages.map((p) => ({
+        ...p,
+        label: p.name + ' (Package)',
+        value: 'package' + p.id,
+        item_type: 'package' as const,
+    }))
+    const products = productStore.products.map((p) => ({
+        ...p,
+        label: p.name + ' (Product)',
+        value: 'product' + p.id,
+        item_type: 'product' as const,
+    }))
+    return [...packages, ...products]
+})
 
 function addProduct() {
     if (!productId.value) {
@@ -24,13 +33,15 @@ function addProduct() {
         return
     }
 
-    const product = productStore.products.find((p) => p.id === productId.value)
-    if (!product) {
+    const item = productOptions.value.find((p) => p.value === productId.value)
+    if (!item) {
         productError.value = "Product not found"
         return
     }
 
-    orderStore.addToCart(product, quantityOrdered.value)
+    orderStore.addToCart({ ...item, quantity: quantityOrdered.value })
+    console.log(JSON.stringify({ ...item, quantity: quantityOrdered.value }, null, 2))
+
 
     productId.value = undefined
     quantityOrdered.value = null

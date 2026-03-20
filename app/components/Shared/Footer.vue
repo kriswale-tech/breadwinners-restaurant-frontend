@@ -1,5 +1,6 @@
 <script setup lang="ts">
 const year = new Date().getFullYear()
+const shopStore = useShopStore()
 </script>
 
 <template>
@@ -16,8 +17,11 @@ const year = new Date().getFullYear()
                 </div>
 
                 <nav class="flex gap-6">
-                    <NuxtLink to="/breadwinners" class="text-neutral-300 hover:text-white">Bread Winners</NuxtLink>
-                    <NuxtLink to="/restaurant" class="text-neutral-300 hover:text-white">Restaurant</NuxtLink>
+                    <template v-for="shop in shopStore.shops" :key="shop.id">
+                        <NuxtLink :to="`/${shop.slug}/${shop.id}`" class="text-neutral-300 hover:text-white">
+                            {{ shop.name }}
+                        </NuxtLink>
+                    </template>
                     <NuxtLink to="/track-order" class="text-neutral-300 hover:text-white">Track Order</NuxtLink>
                 </nav>
 

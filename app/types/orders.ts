@@ -20,11 +20,14 @@ export type DeliveryMethod = 'pickup' | 'delivery'
 
 export interface OrderItem {
     id?: number
-    product: number
+    product?: number
     product_name?: string
+    package?: number
+    package_name?: string
     quantity: number
     unit_price: string | number
     total_price: string | number
+    item_type?: string
 }
 
 export interface OrderCreatePayload {

@@ -87,8 +87,14 @@ function formatMoney(value: string | number): string {
 const itemColumns: TableColumn<OrderItem>[] = [
     {
         accessorKey: 'product_name',
-        header: 'Product',
-        cell: ({ row }) => row.original.product_name ?? `#${row.original.product}`,
+        header: 'Product/Package',
+        cell: ({ row }) => row.original.product_name ?? row.original.package_name ?? '-',
+    },
+    {
+        accessorKey: 'item_type',
+        header: 'Type',
+        cell: ({ row }) => row.original.item_type ?? '-',
+        meta: { class: { td: 'capitalize' } },
     },
     {
         accessorKey: 'unit_price',
