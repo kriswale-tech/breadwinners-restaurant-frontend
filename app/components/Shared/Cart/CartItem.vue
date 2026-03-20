@@ -1,8 +1,8 @@
 <script setup lang="ts">
-import type { CartItemType } from '~/stores/cart-store'
+import type { CartLine } from '~/stores/cart-store'
 
 const props = defineProps<{
-    item: CartItemType
+    item: CartLine
 }>()
 
 const cartStore = useCartStore()
@@ -15,26 +15,26 @@ const price = computed(() => {
 const lineTotal = computed(() => (price.value * props.item.quantity).toFixed(2))
 
 function increase() {
-    cartStore.updateQuantity(props.item.id, props.item.quantity + 1)
+    cartStore.updateQuantity(props.item.item_id, props.item.quantity + 1)
 }
 
 function decrease() {
     if (props.item.quantity <= 1) return
-    cartStore.updateQuantity(props.item.id, props.item.quantity - 1)
+    cartStore.updateQuantity(props.item.item_id, props.item.quantity - 1)
 }
 
 function onQuantityChange(e: Event) {
     const input = e.target as HTMLInputElement
     const parsed = parseInt(input.value, 10)
     if (!Number.isNaN(parsed) && parsed >= 1) {
-        cartStore.updateQuantity(props.item.id, parsed)
+        cartStore.updateQuantity(props.item.item_id, parsed)
     } else {
         input.value = String(props.item.quantity)
     }
 }
 
 function remove() {
-    cartStore.removeFromCart(props.item.id)
+    cartStore.removeFromCart(props.item.item_id)
 }
 </script>
 

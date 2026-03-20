@@ -37,9 +37,9 @@ function onTabChange(value: string | number) {
 }
 
 onMounted(async () => {
-    await callOnce('fetch-shop-categories', () => clientProductStore.fetchShopCategories(Number(route.params.id)))
-    await callOnce('fetch-shop-products', () => clientProductStore.fetchProducts(Number(route.params.id)))
-    await callOnce('fetch-shop-packages', () => clientProductStore.fetchShopPackages(Number(route.params.id)))
+    await clientProductStore.fetchShopCategories(Number(route.params.id))
+    await clientProductStore.fetchProducts(Number(route.params.id))
+    await clientProductStore.fetchShopPackages(Number(route.params.id))
 })
 
 

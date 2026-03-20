@@ -15,7 +15,7 @@ const showSkeleton = computed(() => clientProductStore.loading && clientProductS
             </template>
             <template v-else>
                 <SharedProductCard v-for="product in clientProductStore.shopProducts" :key="product.id"
-                    :product="product" />
+                    :product="product" :shop-id="Number($route.params.id)" />
             </template>
         </div>
     </div>

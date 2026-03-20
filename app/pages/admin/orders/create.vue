@@ -5,6 +5,8 @@ const orderStore = useOrderStore()
 import type { CustomerFormData } from '~/components/checkout/CustomerInfo.vue'
 const toast = useToast()
 
+import { formatCoord } from '~/utils/utils'
+
 // Reference to CustomerInfo component to access form data and validation
 const customerInfoRef = ref<{
     form: Ref<CustomerFormData>
@@ -46,8 +48,8 @@ const buildOrderPayload = (formData: CustomerFormData) => {
         total_amount: orderStore.totalPrice,
         delivery_method: formData.deliveryType,
         delivery_address: formData.address,
-        address_latitude: formData.coordinates?.lat,
-        address_longitude: formData.coordinates?.lng,
+        address_latitude: formatCoord(formData.coordinates?.lat, 10),
+        address_longitude: formatCoord(formData.coordinates?.lng, 11),
         delivery_notes: formData.notes,
         email: formData.email,
         items: items,

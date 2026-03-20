@@ -13,7 +13,7 @@ const products = computed(() => {
 const showSkeleton = computed(() => clientProductStore.loading && products.value.length === 0)
 
 onMounted(async () => {
-    await callOnce('fetch-products-by-shop', () => clientProductStore.fetchProductsByShop(props.shop.id))
+    await clientProductStore.fetchProductsByShop(props.shop.id)
 })
 </script>
 
@@ -33,8 +33,8 @@ onMounted(async () => {
         </div>
         <div class="flex justify-end mt-4">
             <UButton :to="`/${shop.slug}/${shop.id}`" variant="outline" trailing-icon="lucide:arrow-right"
-                color="primary">
-                View All
+                color="primary" size="xl">
+                View products from {{ shop.name }}
             </UButton>
         </div>
     </section>

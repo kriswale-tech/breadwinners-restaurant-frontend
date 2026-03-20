@@ -45,11 +45,11 @@ export interface ProductPackageItem {
 }
 
 export interface ProductPackage {
-    id?: number
+    id: number
     name: string
     description: string
     price: string
-    image: string | null
+    image?: string
     is_active: boolean
     items: ProductPackageItem[]
     created_at?: string

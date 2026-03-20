@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type { OrderItemType, OrderItemType2 } from '~/stores/order-store'
-import type { CartItemType } from '~/stores/cart-store'
+import type { CartLine } from '~/stores/cart-store'
 
 /**
  * OrderSummary Component
@@ -42,6 +42,13 @@ const handleClearProducts = () => {
 const handleRemoveProduct = (productId: string) => {
     emit('remove-product', productId)
 }
+
+/** Stable key for list + remove: order lines use `value`, cart lines use `item_id`. */
+function lineKey(item: OrderItemType | OrderItemType2 | CartLine): string {
+    if ('value' in item && typeof item.value === 'string') return item.value
+    if ('item_id' in item) return item.item_id
+    return String(item.id)
+}
 </script>
 
 <template>
@@ -54,10 +61,11 @@ const handleRemoveProduct = (productId: string) => {
         <!-- Order Items List -->
         <ClientOnly>
             <div class="space-y-3">
-                <div v-for="item in items" :key="item.id" class="flex justify-between items-start text-sm">
+                <div v-for="item in items" :key="lineKey(item)" class="flex justify-between items-start text-sm">
                     <div class="flex-1 min-w-0">
                         <p class="font-medium text-neutral-900 dark:text-white truncate">
-                            {{ item.name }}
+                            {{ item.name }} <span class="text-xs text-neutral-500 dark:text-neutral-400">({{
+                                item.item_type }})</span>
                         </p>
                         <p v-if="item.description"
                             class="text-xs text-neutral-500 dark:text-neutral-400 line-clamp-1 mt-0.5">
@@ -78,7 +86,7 @@ const handleRemoveProduct = (productId: string) => {
                         </div>
                         <div class="" v-if="allowClear">
                             <UButton size="sm" color="error" variant="soft" icon="heroicons:trash"
-                                @click="handleRemoveProduct((item as OrderItemType | OrderItemType2).value)" />
+                                @click="handleRemoveProduct(lineKey(item))" />
                         </div>
                     </div>
                 </div>

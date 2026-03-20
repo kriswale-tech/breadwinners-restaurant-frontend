@@ -1,6 +1,8 @@
 <script setup lang="ts">
+import type { ErrorResponse } from '~/types/error'
 
 import type { CustomerFormData } from '~/components/checkout/CustomerInfo.vue'
+import { formatCoord } from '~/utils/utils'
 
 const cartStore = useCartStore()
 const toast = useToast()
@@ -11,11 +13,53 @@ const customerInfoRef = ref<{
     getFormData: () => CustomerFormData
     validateForm: () => boolean
     showValidationErrors: () => void
+    resetForm: () => void
     state: CustomerFormData
 } | null>(null)
 
+// Reset customer information form
+const resetCustomerInfo = () => {
+    if (customerInfoRef.value) {
+        customerInfoRef.value.resetForm()
+    }
+    cartStore.clearCart()
+}
+
+// build order payload function
+const buildOrderPayload = (formData: CustomerFormData) => {
+    // separate products and packages
+    const products = cartStore.items.filter(item => item.item_type === 'product').map(item => ({
+        product: item.id,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: typeof item.price === 'string' ? parseFloat(item.price) : item.price * item.quantity,
+    }))
+    const packages = cartStore.items.filter(item => item.item_type === 'package').map(item => ({
+        package: item.id,
+        quantity: item.quantity,
+        unit_price: item.price,
+        total_price: typeof item.price === 'string' ? parseFloat(item.price) : item.price * item.quantity,
+    }))
+    console.log('Products in Cart:', JSON.stringify(cartStore.items, null, 2))
+    const items = [...products, ...packages]
+    console.log('Items to be sent:', JSON.stringify(items, null, 2))
+
+    return {
+        customer_name: formData.name,
+        customer_phone: formData.phone,
+        total_amount: cartStore.totalPrice,
+        delivery_method: formData.deliveryType,
+        delivery_address: formData.address,
+        address_latitude: formatCoord(formData.coordinates?.lat, 10),
+        address_longitude: formatCoord(formData.coordinates?.lng, 11),
+        delivery_notes: formData.notes,
+        email: formData.email,
+        items: items,
+    }
+}
+
 // Handle payment button click from OrderSummary
-const handleMakePayment = () => {
+const handleMakePayment = async () => {
     // Validate customer information
     if (!customerInfoRef.value) {
         toast.add({
@@ -53,12 +97,37 @@ const handleMakePayment = () => {
             console.log('Delivery Address:', formData.address)
         }
 
-        toast.add({
-            title: 'Validation Successful',
-            description: 'Form data is valid. Ready to process payment.',
-            color: 'success',
-            icon: 'heroicons:check-circle'
-        })
+        const payload = buildOrderPayload(formData)
+        console.log('Payload:', JSON.stringify(payload, null, 2))
+
+        try {
+            await cartStore.createOrder(payload)
+            toast.add({
+                title: 'Order created successfully',
+                description: 'You\'ll receive a confirmation email shortly, you can track the status of your order from here.',
+                color: 'success',
+                icon: 'heroicons:check-circle',
+                actions: [
+                    {
+                        label: 'Track order',
+                        color: 'primary',
+                        variant: 'soft',
+                        onClick: () => {
+                            navigateTo('/track-order')
+                        }
+                    }
+                ]
+            })
+            resetCustomerInfo()
+        } catch (error) {
+            const errorResponse = error as ErrorResponse
+            toast.add({
+                title: errorResponse.message || 'Error',
+                description: errorResponse.detail || 'Failed to create order',
+                color: 'error',
+                icon: 'heroicons:x-circle'
+            })
+        }
     } else {
         // Show error toast
         toast.add({

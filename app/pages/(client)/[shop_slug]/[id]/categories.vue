@@ -19,7 +19,7 @@ const filteredProducts = (id: number) => {
                 </p>
                 <div class="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                     <SharedProductCard v-for="product in filteredProducts(category.id)" :key="product.id"
-                        :product="product" />
+                        :product="product" :shop-id="Number($route.params.id)" />
                 </div>
             </template>
         </template>

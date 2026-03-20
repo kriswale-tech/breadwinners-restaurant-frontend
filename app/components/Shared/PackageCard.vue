@@ -1,12 +1,10 @@
 <script setup lang="ts">
 import type { ProductPackage } from '~/types/products'
 
+const cartStore = useCartStore()
 const props = defineProps<{
     package: ProductPackage
-}>()
-
-const emit = defineEmits<{
-    (e: 'add-to-cart', payload: ProductPackage): void
+    shopId?: number
 }>()
 
 const formattedPrice = computed(() => `GH₵${Number(props.package.price).toFixed(2)}`)
@@ -19,7 +17,9 @@ const itemLines = computed(() =>
 )
 
 function onAdd() {
-    emit('add-to-cart', props.package)
+    if (props.shopId) {
+        cartStore.addToCart({ kind: 'package', data: props.package }, props.shopId)
+    }
 }
 </script>
 
@@ -66,7 +66,7 @@ function onAdd() {
                 </p>
 
                 <p v-if="itemLines.length" class="text-sm text-neutral-800 dark:text-neutral-200">
-                    {{ itemLines.map((l) => l.label).join(', ') }}
+                    {{itemLines.map((l) => l.label).join(', ')}}
                 </p>
                 <p v-else class="text-sm text-neutral-500 dark:text-neutral-400">
                     No items listed.
@@ -74,7 +74,7 @@ function onAdd() {
             </div>
 
             <!-- Footer -->
-            <div class="mt-auto pt-1 flex items-center justify-between gap-2">
+            <div v-if="shopId" class="mt-auto pt-1 flex items-center justify-between gap-2">
                 <UButton color="primary" variant="subtle" size="sm" icon="heroicons:shopping-cart" label="Add to cart"
                     class="ml-auto" @click="onAdd" />
             </div>
