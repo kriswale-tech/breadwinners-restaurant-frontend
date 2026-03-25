@@ -1,12 +1,31 @@
 <script setup lang="ts">
 import type { ErrorResponse } from '~/types/error'
+import type { PaystackData } from '~/stores/cart-store'
 
 import type { CustomerFormData } from '~/components/checkout/CustomerInfo.vue'
 import { formatCoord } from '~/utils/utils'
 
 const cartStore = useCartStore()
 const toast = useToast()
+const route = useRoute()
+const paystackData = ref<PaystackData | null>(null)
+const paymentModalOpen = ref(false)
 
+/** Paystack returns `reference` (and sometimes `trxref`) on redirect to callback_url */
+const paymentReferenceFromRoute = computed(() => {
+    const r = route.query.reference ?? route.query.trxref
+    if (typeof r === 'string' && r.trim()) return r.trim()
+    if (Array.isArray(r) && r[0]) return String(r[0]).trim()
+    return null
+})
+
+watch(
+    paymentReferenceFromRoute,
+    (ref) => {
+        paymentModalOpen.value = Boolean(ref)
+    },
+    { immediate: true },
+)
 // Reference to CustomerInfo component to access form data and validation
 const customerInfoRef = ref<{
     form: Ref<CustomerFormData>
@@ -55,6 +74,7 @@ const buildOrderPayload = (formData: CustomerFormData) => {
         delivery_notes: formData.notes,
         email: formData.email,
         items: items,
+        callback_url: `${route.path}`,
     }
 }
 
@@ -101,24 +121,24 @@ const handleMakePayment = async () => {
         console.log('Payload:', JSON.stringify(payload, null, 2))
 
         try {
-            await cartStore.createOrder(payload)
-            toast.add({
-                title: 'Order created successfully',
-                description: 'You\'ll receive a confirmation email shortly, you can track the status of your order from here.',
-                color: 'success',
-                icon: 'heroicons:check-circle',
-                actions: [
-                    {
-                        label: 'Track order',
-                        color: 'primary',
-                        variant: 'soft',
-                        onClick: () => {
-                            navigateTo('/track-order')
-                        }
-                    }
-                ]
-            })
-            resetCustomerInfo()
+            const response = await cartStore.createOrder(payload)
+            // toast.add({
+            //     title: 'Order created successfully',
+            //     description: 'You\'ll receive a confirmation email shortly, you can track the status of your order from here.',
+            //     color: 'success',
+            //     icon: 'heroicons:check-circle',
+            //     actions: [
+            //         {
+            //             label: 'Track order',
+            //             color: 'primary',
+            //             variant: 'soft',
+            //             onClick: () => {
+            //                 navigateTo('/track-order')
+            //             }
+            //         }
+            //     ]
+            // })
+            paystackData.value = response
         } catch (error) {
             const errorResponse = error as ErrorResponse
             toast.add({
@@ -139,10 +159,18 @@ const handleMakePayment = async () => {
     }
 }
 
-</script>
+watch(paystackData, (newVal) => {
+    if (newVal?.authorization_url) {
+        window.open(newVal.authorization_url)
+    }
+}, { deep: true })
 
+</script>
 <template>
     <div class="container mx-auto px-4 py-32 min-h-screen">
+        <CheckoutPaymentModal :open="paymentModalOpen" :payment-reference="paymentReferenceFromRoute"
+            @update:open="paymentModalOpen = $event" v-if="paymentModalOpen" />
+
         <!-- Empty cart state -->
         <div v-if="cartStore.items.length === 0"
             class="flex flex-col items-center justify-center rounded-2xl border border-neutral-200 bg-neutral-50/50 px-6 py-16 text-center dark:border-neutral-700 dark:bg-neutral-800/30">

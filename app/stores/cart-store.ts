@@ -1,6 +1,18 @@
 import { defineStore } from 'pinia'
 import type { Product, ProductPackage } from '~/types/products'
-import type { OrderCreatePayload } from '~/types/orders'
+import type { OrderCreatePayload, OrderDetail } from '~/types/orders'
+
+export interface PaystackData {
+    authorization_url: string
+    access_code: string
+    reference: string
+}
+
+export interface VerifyPaymentResponse {
+    status: string
+    message: string
+    order: OrderDetail
+}
 
 /**
  * Cart line: product or package. Use `item_id` (e.g. product-1 vs package-1) so numeric ids never collide.
@@ -25,7 +37,7 @@ export type AddToCartPayload =
     | { kind: 'package'; data: ProductPackage; quantity?: number }
 
 export const useCartStore = defineStore('cart', () => {
-    const { post } = useApi()
+    const { post, get } = useApi()
     const items = ref<CartLine[]>([])
     const shopId = ref<number | null>(null)
     const toast = useToast()
@@ -107,12 +119,23 @@ export const useCartStore = defineStore('cart', () => {
     async function createOrder(payload: OrderCreatePayload) {
         loading.value = true
         try {
-            await post<void>(`shops/${shopId.value}/orders/`, payload)
+            const response = await post<PaystackData>(`shops/${shopId.value}/orders/initialize-payment/`, payload)
+            return response
         } catch (error) {
             console.error(error)
             throw error
         } finally {
             loading.value = false
+        }
+    }
+
+    async function verifyPayment(reference: string) {
+        try {
+            const response = await get<VerifyPaymentResponse>(`shops/${shopId.value}/orders/verify-payment/?reference=${reference}`)
+            return response
+        } catch (error) {
+            console.error(error)
+            throw error
         }
     }
 
@@ -127,6 +150,7 @@ export const useCartStore = defineStore('cart', () => {
         createOrder,
         loading,
         shopId,
+        verifyPayment,
     }
 }, {
     persist: true,

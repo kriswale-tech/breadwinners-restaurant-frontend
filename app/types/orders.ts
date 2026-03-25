@@ -41,6 +41,7 @@ export interface OrderCreatePayload {
     delivery_notes?: string
     email?: string
     items: OrderItem[]
+    callback_url?: string
 }
 
 export interface OrderDetail {
