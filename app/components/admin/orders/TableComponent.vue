@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { h, resolveComponent } from 'vue'
 import type { TableColumn } from '@nuxt/ui'
-import type { Order, OrderStatus } from '~/types/orders'
+import type { Order, OrderStatus, PaymentStatus, DeliveryMethod } from '~/types/orders'
 
 const orderStore = useOrderStore()
 
@@ -27,8 +27,17 @@ const statusBadgeColor: Record<OrderStatus, 'warning' | 'info' | 'error' | 'succ
     delivered: 'success',
 }
 
+const paymentStatusBadgeColor: Record<PaymentStatus, 'warning' | 'info' | 'error' | 'success' | 'neutral'> = {
+    paid: 'success',
+    unpaid: 'error',
+}
+
+function paymentStatusLabel(paymentStatus: PaymentStatus): string {
+    return paymentStatus ? paymentStatus.charAt(0).toUpperCase() + paymentStatus.slice(1) : '-'
+}
+
 function statusLabel(status: OrderStatus): string {
-    return status.charAt(0).toUpperCase() + status.slice(1)
+    return status ? status.charAt(0).toUpperCase() + status.slice(1) : '-'
 }
 
 const statusDropdownOptions: {
@@ -129,7 +138,19 @@ const columns: TableColumn<Order>[] = [
     },
     {
         accessorKey: 'delivery_method',
-        header: 'Delivery Type',
+        header: 'Delivery Method',
+        cell: ({ row }) => {
+            const deliveryMethod = row.getValue('delivery_method') as DeliveryMethod
+            return deliveryMethod ? deliveryMethod.charAt(0).toUpperCase() + deliveryMethod.slice(1) : '-'
+        },
+    },
+    {
+        accessorKey: 'payment_status',
+        header: 'Payment Status',
+        cell: ({ row }) => {
+            const paymentStatus = row.getValue('payment_status') as PaymentStatus
+            return h(UBadge, { variant: 'subtle', color: paymentStatusBadgeColor[paymentStatus] }, () => paymentStatusLabel(paymentStatus))
+        },
     },
     {
         id: 'actions',

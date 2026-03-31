@@ -19,6 +19,10 @@ const paymentReferenceFromRoute = computed(() => {
     return null
 })
 
+const isPickupDelivery = computed(() => {
+    return customerInfoRef.value?.state.deliveryType === 'pickup'
+})
+
 watch(
     paymentReferenceFromRoute,
     (ref) => {
@@ -78,6 +82,11 @@ const buildOrderPayload = (formData: CustomerFormData) => {
     }
 }
 
+// handle create order
+const handleCreateOrder = async () => {
+    console.log('Creating order...')
+}
+
 // Handle payment button click from OrderSummary
 const handleMakePayment = async () => {
     // Validate customer information
@@ -122,22 +131,6 @@ const handleMakePayment = async () => {
 
         try {
             const response = await cartStore.createOrder(payload)
-            // toast.add({
-            //     title: 'Order created successfully',
-            //     description: 'You\'ll receive a confirmation email shortly, you can track the status of your order from here.',
-            //     color: 'success',
-            //     icon: 'heroicons:check-circle',
-            //     actions: [
-            //         {
-            //             label: 'Track order',
-            //             color: 'primary',
-            //             variant: 'soft',
-            //             onClick: () => {
-            //                 navigateTo('/track-order')
-            //             }
-            //         }
-            //     ]
-            // })
             paystackData.value = response
         } catch (error) {
             const errorResponse = error as ErrorResponse
@@ -214,7 +207,8 @@ watch(paystackData, (newVal) => {
                     <div class="sticky top-20">
                         <div
                             class="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700">
-                            <CheckoutOrderSummary @make-payment="handleMakePayment" />
+                            <CheckoutOrderSummary @make-payment="handleMakePayment"
+                                @make-payment-on-pickup="handleCreateOrder" :is-pickup-delivery="isPickupDelivery" />
                         </div>
                     </div>
                 </div>

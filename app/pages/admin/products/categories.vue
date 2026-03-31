@@ -1,7 +1,9 @@
 <script setup lang="ts">
-import { categories, type Category } from '~/data/products'
+import type { ProductCategory } from '~/types/products'
 
-const selectedCategory = ref<Category | null>(null)
+const productStore = useProductStore()
+
+const selectedCategory = ref<ProductCategory | null>(null)
 
 const showAddEditCategoryModal = ref(false)
 const showDeleteCategoryModal = ref(false)
@@ -16,16 +18,16 @@ function closeAddEditCategoryModal() {
     selectedCategory.value = null
 }
 
-function openAddEditCategoryModal(category?: Category) {
+function openAddEditCategoryModal(category?: ProductCategory) {
     selectedCategory.value = category ?? null
     showAddEditCategoryModal.value = true
 }
 
-function onEditCategory(category: Category) {
+function onEditCategory(category: ProductCategory) {
     openAddEditCategoryModal(category)
 }
 
-function openDeleteCategoryModal(category: Category) {
+function openDeleteCategoryModal(category: ProductCategory) {
     selectedCategory.value = category
     showDeleteCategoryModal.value = true
 }
@@ -35,36 +37,12 @@ function closeDeleteCategoryModal() {
     selectedCategory.value = null
 }
 
-function deleteCategory() {
+async function deleteCategory() {
     if (!selectedCategory.value) return
-    const index = categories.value.findIndex((c) => c.id === selectedCategory.value!.id)
-    if (index !== -1) {
-        categories.value.splice(index, 1)
-    }
+    await productStore.deleteCategory(selectedCategory.value.id)
     closeDeleteCategoryModal()
 }
 
-function onSaveCategory(payload: Partial<Category> & { name: string }) {
-    if (payload.id != null) {
-        const index = categories.value.findIndex((c) => c.id === payload.id)
-        const existing = index !== -1 ? categories.value[index] : undefined
-        if (existing) {
-            categories.value[index] = {
-                id: existing.id,
-                name: payload.name,
-                description: payload.description,
-            }
-        }
-    } else {
-        const nextId = Math.max(0, ...categories.value.map((c) => c.id)) + 1
-        categories.value.push({
-            id: nextId,
-            name: payload.name,
-            description: payload.description,
-        })
-    }
-    closeAddEditCategoryModal()
-}
 </script>
 
 <template>
@@ -76,12 +54,11 @@ function onSaveCategory(payload: Partial<Category> & { name: string }) {
         </div>
 
         <!-- Categories table -->
-        <AdminProductsCategoryTableComponent :categories="categories" @edit="onEditCategory"
-            @delete="openDeleteCategoryModal" />
+        <AdminProductsCategoryTableComponent @edit="onEditCategory" @delete="openDeleteCategoryModal" />
 
         <!-- Add / Edit category modal -->
         <AdminProductsAddEditCategory v-if="showAddEditCategoryModal" :open="showAddEditCategoryModal"
-            :category="selectedCategory" @close="closeAddEditCategoryModal" @save="onSaveCategory" />
+            :category="selectedCategory" @close="closeAddEditCategoryModal" />
 
         <!-- Delete category modal -->
         <SharedPromptCard v-if="showDeleteCategoryModal" @close="closeDeleteCategoryModal"

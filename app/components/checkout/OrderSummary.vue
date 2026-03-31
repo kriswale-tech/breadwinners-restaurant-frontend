@@ -14,6 +14,7 @@ const props = defineProps<{
     buttonLabel?: string
     allowClear?: boolean
     loading?: boolean
+    isPickupDelivery?: boolean
 }>()
 
 const items = computed(() => props.items ?? cartStore.items)
@@ -23,6 +24,7 @@ const totalPrice = computed(() => props.totalPrice?.toFixed(2) ?? cartStore.tota
 // Emit event when payment button is clicked
 const emit = defineEmits<{
     (e: 'make-payment'): void
+    (e: 'make-payment-on-pickup'): void
     (e: 'clear-products'): void
     (e: 'remove-product', payload: string): void
 }>()
@@ -33,6 +35,10 @@ const formattedTotal = computed(() => cartStore.totalPrice.toFixed(2))
 // Handle payment button click
 const handlePayment = () => {
     emit('make-payment')
+}
+
+const handlePaymentOnPickup = () => {
+    emit('make-payment-on-pickup')
 }
 
 const handleClearProducts = () => {
@@ -125,8 +131,22 @@ function lineKey(item: OrderItemType | OrderItemType2 | CartLine): string {
 
         <!-- Make Payment Button -->
         <div class="">
-            <UButton block size="lg" color="primary" :label="buttonLabel ?? 'Make Payment'" icon="heroicons:credit-card"
-                class="mt-6" @click="handlePayment" :loading="loading" :disabled="loading" />
+            <!-- if is pickup delivery, show pickup button -->
+            <div class="flex gap-2" v-if="isPickupDelivery">
+                <UButton block size="lg" color="primary" label="Pay now" icon="heroicons:credit-card" class="mt-6"
+                    @click="handlePayment" :loading="loading" :disabled="loading" />
+                <UButton block size="lg" color="primary" label="Pay on Pickup" icon="heroicons:building-office"
+                    class="mt-6" @click="handlePaymentOnPickup" :loading="loading" :disabled="loading"
+                    variant="outline" />
+            </div>
+
+            <div class="" v-else>
+                <UButton block size="lg" color="primary" :label="buttonLabel ?? 'Make Payment'"
+                    icon="heroicons:credit-card" class="mt-6" @click="handlePayment" :loading="loading"
+                    :disabled="loading" />
+            </div>
+
+            <!-- if allow clear, show clear button -->
             <UButton block size="lg" color="error" variant="soft" label="Clear" icon="heroicons:trash" v-if="allowClear"
                 @click="handleClearProducts" class="mt-2" :loading="loading" :disabled="loading" />
         </div>

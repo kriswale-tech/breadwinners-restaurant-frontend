@@ -21,7 +21,7 @@ export const useClientProductStore = defineStore('client-product', () => {
     async function fetchProductsByShop(shopId: number) {
         try {
             loading.value = true
-            const response = await get<Product[]>(`/shops/${shopId}/products`)
+            const response = await get<Product[]>(`products/`)
             products.value = products.value.filter(product => product.shopId !== shopId)
             products.value.push({
                 shopId: shopId,
@@ -37,7 +37,7 @@ export const useClientProductStore = defineStore('client-product', () => {
     async function fetchProducts(shopId: number) {
         try {
             loading.value = true
-            const response = await get<Product[]>(`/shops/${shopId}/products`)
+            const response = await get<Product[]>(`products/`)
             shopProducts.value = response
         } catch (error) {
             console.error(error)
@@ -48,7 +48,7 @@ export const useClientProductStore = defineStore('client-product', () => {
 
     async function fetchShopCategories(shopId: number) {
         try {
-            const response = await get<ProductCategory[]>(`/shops/${shopId}/product-categories`)
+            const response = await get<ProductCategory[]>(`product-categories/`)
             shopCategories.value = response
         } catch (error) {
             console.error(error)
@@ -60,7 +60,7 @@ export const useClientProductStore = defineStore('client-product', () => {
 
     async function fetchShopPackages(shopId: number) {
         try {
-            const response = await get<ProductPackage[]>(`/shops/${shopId}/packages`)
+            const response = await get<ProductPackage[]>(`packages/`)
             shopPackages.value = response
         } catch (error) {
             console.error(error)

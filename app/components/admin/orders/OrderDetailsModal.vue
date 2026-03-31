@@ -160,6 +160,11 @@ function copyToClipboard(lat: string | number, lng: string | number) {
                         <h3 class="text-sm font-semibold text-neutral-700 dark:text-neutral-300 mb-2">
                             Order info
                         </h3>
+                        <!-- payment status -->
+                        <p class="text-sm text-neutral-600 dark:text-neutral-400 mb-2">
+                            <UBadge :color="order.payment_status === 'paid' ? 'success' : 'error'" variant="subtle"
+                                :label="order.payment_status === 'paid' ? 'Paid' : 'Unpaid'" />
+                        </p>
                         <ul class="text-sm text-neutral-600 dark:text-neutral-400 space-y-1">
                             <li>Order ID: #{{ order.order_number }}</li>
                             <li>

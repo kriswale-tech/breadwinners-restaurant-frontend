@@ -24,19 +24,27 @@ const columns: TableColumn<ProductPackage>[] = [
         accessorKey: 'name',
         header: 'Package',
         cell: ({ row }) => {
+            const image = row.original.image
             const name = row.original.name
+
             return h(
                 'div',
                 { class: 'flex items-center gap-3' },
                 [
-                    h(
-                        'div',
-                        {
-                            class:
-                                'flex h-10 w-10 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500',
-                        },
-                        [h(resolveComponent('Icon'), { name: 'i-lucide-package', class: 'size-5' })],
-                    ),
+                    image
+                        ? h('img', {
+                            src: image,
+                            alt: name,
+                            class: 'h-10 w-10 rounded-md object-cover',
+                        })
+                        : h(
+                            'div',
+                            {
+                                class:
+                                    'flex h-10 w-10 items-center justify-center rounded-md bg-neutral-100 text-neutral-400 dark:bg-neutral-800 dark:text-neutral-500',
+                            },
+                            [h(resolveComponent('Icon'), { name: 'i-lucide-image', class: 'size-5' })],
+                        ),
                     h('div', { class: 'min-w-0' }, [
                         h('p', { class: 'text-sm font-medium text-neutral-900 dark:text-white truncate' }, name),
                     ]),

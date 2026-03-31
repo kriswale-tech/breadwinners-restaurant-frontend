@@ -1,5 +1,7 @@
 import type { Shop } from "~/types/index"
 
+export type PaymentStatus = 'paid' | 'unpaid'
+
 export interface Order {
     id: number
     shop: number
@@ -12,6 +14,7 @@ export interface Order {
     order_number: string
     created_at: string
     updated_at: string
+    payment_status: PaymentStatus
 }
 
 export type OrderStatus = 'pending' | 'confirmed' | 'cancelled' | 'done' | 'delivered'
@@ -61,6 +64,7 @@ export interface OrderDetail {
     address_longitude?: string | number
     delivery_notes?: string
     items: OrderItem[]
+    payment_status: PaymentStatus
 }
 
 export interface OrderStatistics {

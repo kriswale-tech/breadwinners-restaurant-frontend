@@ -150,7 +150,12 @@ onMounted(() => {
                         }}
                     </p>
                 </div>
-                <UButton color="neutral" variant="outline" label="Close" @click="close" />
+                <div class="flex gap-2 justify-center items-center">
+                    <UButton color="neutral" variant="outline" label="Close" @click="close" />
+                    <!-- retry button -->
+                    <UButton color="primary" variant="outline" label="Retry"
+                        @click="runVerification(props.paymentReference!)" />
+                </div>
             </div>
         </template>
 

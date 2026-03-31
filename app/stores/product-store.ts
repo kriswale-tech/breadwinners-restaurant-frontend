@@ -26,7 +26,7 @@ export const useProductStore = defineStore('product', () => {
     async function getProducts() {
         try {
             loading.value = true
-            const result = await get<Product[]>(`shops/${selectedShop?.id}/products/`)
+            const result = await get<Product[]>(`products/`)
             products.value = result
             await getProductStatistics()
         }
@@ -48,7 +48,7 @@ export const useProductStore = defineStore('product', () => {
     async function createProduct(formData: FormData) {
         try {
             loading.value = true
-            await post<void>(`shops/${selectedShop?.id}/products/`, formData)
+            await post<void>(`products/`, formData)
             toast.add({
                 title: 'Success',
                 description: 'Product created successfully',
@@ -75,7 +75,7 @@ export const useProductStore = defineStore('product', () => {
     async function updateProduct(id: number, formData: FormData) {
         try {
             loading.value = true
-            await put<void>(`shops/${selectedShop?.id}/products/${id}/`, formData)
+            await put<void>(`products/${id}/`, formData)
             toast.add({
                 title: 'Success',
                 description: 'Product updated successfully',
@@ -102,7 +102,7 @@ export const useProductStore = defineStore('product', () => {
     async function deleteProduct(id: number) {
         try {
             loading.value = true
-            await del<void>(`shops/${selectedShop?.id}/products/${id}/`)
+            await del<void>(`products/${id}/`)
             toast.add({
                 title: 'Success',
                 description: 'Product deleted successfully',
@@ -131,7 +131,7 @@ export const useProductStore = defineStore('product', () => {
     async function getCategories() {
         try {
             loading.value = true
-            const result = await get<ProductCategory[]>(`shops/${selectedShop?.id}/product-categories/`)
+            const result = await get<ProductCategory[]>(`product-categories/`)
             categories.value = result
             await getProductStatistics()
         }
@@ -153,7 +153,7 @@ export const useProductStore = defineStore('product', () => {
     async function createCategory(payload: CategoryCreateUpdatePayload) {
         try {
             loading.value = true
-            const result = await post<ProductCategory>(`shops/${selectedShop?.id}/product-categories/`, payload)
+            const result = await post<ProductCategory>(`product-categories/`, payload)
             toast.add({
                 title: 'Success',
                 description: 'Category created successfully',
@@ -164,13 +164,7 @@ export const useProductStore = defineStore('product', () => {
         }
         catch (error) {
             console.error(error)
-            const errorResponse = error as ErrorResponse
-            toast.add({
-                title: errorResponse.message || 'Error',
-                description: errorResponse.detail || 'Failed to create category',
-                color: 'error',
-                icon: 'i-lucide-alert-circle',
-            })
+            throw error
         }
         finally {
             loading.value = false
@@ -180,7 +174,7 @@ export const useProductStore = defineStore('product', () => {
     async function updateCategory(id: number, payload: CategoryCreateUpdatePayload) {
         try {
             loading.value = true
-            const result = await put<ProductCategory>(`shops/${selectedShop?.id}/product-categories/${id}/`, payload)
+            const result = await put<ProductCategory>(`product-categories/${id}/`, payload)
             toast.add({
                 title: 'Success',
                 description: 'Category updated successfully',
@@ -192,13 +186,7 @@ export const useProductStore = defineStore('product', () => {
         }
         catch (error) {
             console.error(error)
-            const errorResponse = error as ErrorResponse
-            toast.add({
-                title: errorResponse.message || 'Error',
-                description: errorResponse.detail || 'Failed to update category',
-                color: 'error',
-                icon: 'i-lucide-alert-circle',
-            })
+            throw error
         }
         finally {
             loading.value = false
@@ -208,7 +196,7 @@ export const useProductStore = defineStore('product', () => {
     async function deleteCategory(id: number) {
         try {
             loading.value = true
-            await del<void>(`shops/${selectedShop?.id}/product-categories/${id}/`)
+            await del<void>(`product-categories/${id}/`)
             toast.add({
                 title: 'Success',
                 description: 'Category deleted successfully',
@@ -237,7 +225,7 @@ export const useProductStore = defineStore('product', () => {
     async function getPackages() {
         try {
             loading.value = true
-            const result = await get<ProductPackage[]>(`shops/${selectedShop?.id}/packages/`)
+            const result = await get<ProductPackage[]>(`packages/`)
             packages.value = result
             await getProductStatistics()
         }
@@ -260,7 +248,7 @@ export const useProductStore = defineStore('product', () => {
 
         try {
             loading.value = true
-            await post<ProductPackage>(`shops/${selectedShop?.id}/packages/`, formData)
+            await post<ProductPackage>(`packages/`, formData)
             toast.add({
                 title: 'Success',
                 description: 'Package created successfully',
@@ -288,7 +276,7 @@ export const useProductStore = defineStore('product', () => {
     async function updatePackage(id: number, formData: FormData) {
         try {
             loading.value = true
-            await put<ProductPackage>(`shops/${selectedShop?.id}/packages/${id}/`, formData)
+            await put<ProductPackage>(`packages/${id}/`, formData)
             toast.add({
                 title: 'Success',
                 description: 'Package updated successfully',
@@ -314,7 +302,7 @@ export const useProductStore = defineStore('product', () => {
     async function deletePackage(id: number) {
         try {
             loading.value = true
-            await del<void>(`shops/${selectedShop?.id}/packages/${id}/`)
+            await del<void>(`packages/${id}/`)
             toast.add({
                 title: 'Success',
                 description: 'Package deleted successfully',
@@ -341,7 +329,7 @@ export const useProductStore = defineStore('product', () => {
     async function getProductStatistics() {
         try {
             loading.value = true
-            const result = await get<ProductStatistics>(`shops/${selectedShop?.id}/statistics/`)
+            const result = await get<ProductStatistics>(`product-statistics/`)
             productStatistics.value = result
         }
         catch (error) {
