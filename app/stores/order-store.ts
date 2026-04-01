@@ -48,7 +48,7 @@ export const useOrderStore = defineStore('order', () => {
     async function createOrder(payload: OrderCreatePayload) {
         loading.value = true
         try {
-            await post<void>(`shops/${selectedShop?.id}/orders/`, payload)
+            const order = await post<OrderDetail>(`shops/${selectedShop?.id}/orders/`, payload)
             await getOrders()
             toast.add({
                 title: 'Success',
@@ -56,6 +56,7 @@ export const useOrderStore = defineStore('order', () => {
                 color: 'success',
                 icon: 'heroicons:check-circle',
             })
+            return order
         } catch (error) {
             console.error(error)
             throw error

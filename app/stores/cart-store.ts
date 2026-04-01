@@ -139,6 +139,25 @@ export const useCartStore = defineStore('cart', () => {
         }
     }
 
+    async function createOrderWithoutPayment(payload: OrderCreatePayload) {
+        loading.value = true
+        try {
+            const order = await post<OrderDetail>(`shops/${shopId.value}/orders/`, payload)
+            toast.add({
+                title: 'Success',
+                description: 'Order created successfully',
+                color: 'success',
+                icon: 'heroicons:check-circle',
+            })
+            return order
+        } catch (error) {
+            console.error(error)
+            throw error
+        } finally {
+            loading.value = false
+        }
+    }
+
     return {
         items,
         addToCart,
@@ -151,6 +170,7 @@ export const useCartStore = defineStore('cart', () => {
         loading,
         shopId,
         verifyPayment,
+        createOrderWithoutPayment,
     }
 }, {
     persist: true,

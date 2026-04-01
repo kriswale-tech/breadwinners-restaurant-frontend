@@ -4,13 +4,12 @@ import type { PaystackData } from '~/stores/cart-store'
 
 import type { CustomerFormData } from '~/components/checkout/CustomerInfo.vue'
 import { formatCoord } from '~/utils/utils'
-
+import { storePaymentOrderDetail } from '~/utils/payment-order-storage'
 const cartStore = useCartStore()
 const toast = useToast()
 const route = useRoute()
 const paystackData = ref<PaystackData | null>(null)
 const paymentModalOpen = ref(false)
-
 /** Paystack returns `reference` (and sometimes `trxref`) on redirect to callback_url */
 const paymentReferenceFromRoute = computed(() => {
     const r = route.query.reference ?? route.query.trxref
@@ -82,13 +81,10 @@ const buildOrderPayload = (formData: CustomerFormData) => {
     }
 }
 
-// handle create order
-const handleCreateOrder = async () => {
-    console.log('Creating order...')
-}
+
 
 // Handle payment button click from OrderSummary
-const handleMakePayment = async () => {
+const handleMakePayment = async (payLater = false) => {
     // Validate customer information
     if (!customerInfoRef.value) {
         toast.add({
@@ -98,13 +94,6 @@ const handleMakePayment = async () => {
             icon: 'heroicons:exclamation-triangle'
         })
         return
-    }
-
-    // Always log coordinates and address when delivery is selected (from reactive state)
-    const state = customerInfoRef.value.state
-    if (state.deliveryType === 'delivery') {
-        console.log('Delivery Coordinates:', state.coordinates)
-        console.log('Delivery Address:', state.address)
     }
 
     // Show validation errors before validating
@@ -129,17 +118,35 @@ const handleMakePayment = async () => {
         const payload = buildOrderPayload(formData)
         console.log('Payload:', JSON.stringify(payload, null, 2))
 
-        try {
-            const response = await cartStore.createOrder(payload)
-            paystackData.value = response
-        } catch (error) {
-            const errorResponse = error as ErrorResponse
-            toast.add({
-                title: errorResponse.message || 'Error',
-                description: errorResponse.detail || 'Failed to create order',
-                color: 'error',
-                icon: 'heroicons:x-circle'
-            })
+        if (payLater) {
+            // create order without payment
+            try {
+                const order = await cartStore.createOrderWithoutPayment(payload)
+                storePaymentOrderDetail(order)
+                navigateTo(`/checkout/${encodeURIComponent(order.order_number)}/payment-success`)
+                resetCustomerInfo()
+            } catch (error) {
+                const errorResponse = error as ErrorResponse
+                toast.add({
+                    title: errorResponse.message || 'Error',
+                    description: errorResponse.detail || 'Failed to create order',
+                    color: 'error',
+                    icon: 'heroicons:x-circle'
+                })
+            }
+        } else {
+            try {
+                const response = await cartStore.createOrder(payload)
+                paystackData.value = response
+            } catch (error) {
+                const errorResponse = error as ErrorResponse
+                toast.add({
+                    title: errorResponse.message || 'Error',
+                    description: errorResponse.detail || 'Failed to create order',
+                    color: 'error',
+                    icon: 'heroicons:x-circle'
+                })
+            }
         }
     } else {
         // Show error toast
@@ -208,7 +215,8 @@ watch(paystackData, (newVal) => {
                         <div
                             class="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700">
                             <CheckoutOrderSummary @make-payment="handleMakePayment"
-                                @make-payment-on-pickup="handleCreateOrder" :is-pickup-delivery="isPickupDelivery" />
+                                @make-payment-on-pickup="handleMakePayment(true)"
+                                :is-pickup-delivery="isPickupDelivery" />
                         </div>
                     </div>
                 </div>
