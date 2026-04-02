@@ -3,7 +3,7 @@ import type { Product } from '~/types/products'
 
 const props = defineProps<{
     product: Product
-    shopId?: number
+
 }>()
 
 const cartStore = useCartStore()
@@ -11,9 +11,7 @@ const cartStore = useCartStore()
 const formattedPrice = computed(() => `GH₵${Number(props.product.price).toFixed(2)}`)
 
 function onAdd() {
-    if (props.shopId) {
-        cartStore.addToCart({ kind: 'product', data: props.product }, props.shopId)
-    }
+    cartStore.addToCart({ kind: 'product', data: props.product })
 }
 </script>
 
@@ -53,7 +51,7 @@ function onAdd() {
             </div>
 
             <!-- Footer -->
-            <div v-if="shopId" class="mt-auto pt-1 flex justify-end">
+            <div class="mt-auto pt-1 flex justify-end">
                 <UButton color="primary" variant="subtle" size="sm" icon="heroicons:shopping-cart" label="Add to cart"
                     class="ml-auto" aria-label="Add to cart" @click="onAdd" />
             </div>

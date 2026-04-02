@@ -39,36 +39,11 @@ export type AddToCartPayload =
 export const useCartStore = defineStore('cart', () => {
     const { post, get } = useApi()
     const items = ref<CartLine[]>([])
-    const shopId = ref<number | null>(null)
     const toast = useToast()
     const loading = ref(false)
 
-    watch(() => items.value, (newItems) => {
-        if (newItems.length === 0) {
-            shopId.value = null
-            console.log('shopId from watch', shopId.value)
-        }
-    })
 
-    function addToCart(payload: AddToCartPayload, shop: number) {
-        if (shopId.value !== null && shopId.value !== shop) {
-            toast.add({
-                title: 'Cart is not empty',
-                description: 'Please clear the cart before adding items from another shop',
-                color: 'warning',
-                actions: [
-                    {
-                        label: 'Yes, clear cart',
-                        color: 'error',
-                        variant: 'soft',
-                        onClick: () => clearCart()
-                    }
-                ]
-            })
-            return
-        }
-        shopId.value = shop;
-        console.log('shopId', shopId.value)
+    function addToCart(payload: AddToCartPayload,) {
         const quantity = payload.quantity ?? 1
         const item_id = payload.kind === 'product' ? productCartId(payload.data.id) : packageCartId(payload.data.id)
         const existing = items.value.find((i) => i.item_id === item_id)
@@ -116,10 +91,10 @@ export const useCartStore = defineStore('cart', () => {
     )
 
     // ========================= ORDER OPERATIONS =========================
-    async function createOrder(payload: OrderCreatePayload) {
+    async function createOrder(payload: OrderCreatePayload, shopId: number) {
         loading.value = true
         try {
-            const response = await post<PaystackData>(`shops/${shopId.value}/orders/initialize-payment/`, payload)
+            const response = await post<PaystackData>(`shops/${shopId}/orders/initialize-payment/`, payload)
             return response
         } catch (error) {
             console.error(error)
@@ -129,9 +104,9 @@ export const useCartStore = defineStore('cart', () => {
         }
     }
 
-    async function verifyPayment(reference: string) {
+    async function verifyPayment(reference: string, shopId: number) {
         try {
-            const response = await get<VerifyPaymentResponse>(`shops/${shopId.value}/orders/verify-payment/?reference=${reference}`)
+            const response = await get<VerifyPaymentResponse>(`shops/${shopId}/orders/verify-payment/?reference=${reference}`)
             return response
         } catch (error) {
             console.error(error)
@@ -139,10 +114,10 @@ export const useCartStore = defineStore('cart', () => {
         }
     }
 
-    async function createOrderWithoutPayment(payload: OrderCreatePayload) {
+    async function createOrderWithoutPayment(payload: OrderCreatePayload, shopId: number) {
         loading.value = true
         try {
-            const order = await post<OrderDetail>(`shops/${shopId.value}/orders/`, payload)
+            const order = await post<OrderDetail>(`shops/${shopId}/orders/`, payload)
             toast.add({
                 title: 'Success',
                 description: 'Order created successfully',
@@ -168,7 +143,6 @@ export const useCartStore = defineStore('cart', () => {
         totalPrice,
         createOrder,
         loading,
-        shopId,
         verifyPayment,
         createOrderWithoutPayment,
     }

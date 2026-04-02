@@ -17,6 +17,11 @@ export const useClientProductStore = defineStore('client-product', () => {
     const shopCategories = ref<ProductCategory[]>([])
     const shopPackages = ref<ProductPackage[]>([])
 
+    /** Home / global catalog (not tied to a single shop route) */
+    const homePackages = ref<ProductPackage[]>([])
+    const homeProducts = ref<Product[]>([])
+    const homeCategories = ref<ProductCategory[]>([])
+
 
     async function fetchProductsByShop(shopId: number) {
         try {
@@ -67,6 +72,24 @@ export const useClientProductStore = defineStore('client-product', () => {
         }
     }
 
+    async function fetchHomeCatalog() {
+        loading.value = true
+        try {
+            const [packagesRes, productsRes, categoriesRes] = await Promise.all([
+                get<ProductPackage[]>(`packages/`),
+                get<Product[]>(`products/`),
+                get<ProductCategory[]>(`product-categories/`),
+            ])
+            homePackages.value = packagesRes
+            homeProducts.value = productsRes
+            homeCategories.value = categoriesRes
+        } catch (error) {
+            console.error(error)
+        } finally {
+            loading.value = false
+        }
+    }
+
     return {
         products,
         fetchProductsByShop,
@@ -76,7 +99,11 @@ export const useClientProductStore = defineStore('client-product', () => {
         shopCategories,
         fetchShopCategories,
         shopPackages,
-        fetchShopPackages
+        fetchShopPackages,
+        homePackages,
+        homeProducts,
+        homeCategories,
+        fetchHomeCatalog,
     }
 },)
 

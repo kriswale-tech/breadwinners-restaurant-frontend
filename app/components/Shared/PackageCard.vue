@@ -4,7 +4,6 @@ import type { ProductPackage } from '~/types/products'
 const cartStore = useCartStore()
 const props = defineProps<{
     package: ProductPackage
-    shopId?: number
 }>()
 
 const formattedPrice = computed(() => `GH₵${Number(props.package.price).toFixed(2)}`)
@@ -17,9 +16,9 @@ const itemLines = computed(() =>
 )
 
 function onAdd() {
-    if (props.shopId) {
-        cartStore.addToCart({ kind: 'package', data: props.package }, props.shopId)
-    }
+
+    cartStore.addToCart({ kind: 'package', data: props.package })
+
 }
 </script>
 
@@ -74,7 +73,7 @@ function onAdd() {
             </div>
 
             <!-- Footer -->
-            <div v-if="shopId" class="mt-auto pt-1 flex items-center justify-between gap-2">
+            <div class="mt-auto pt-1 flex items-center justify-between gap-2">
                 <UButton color="primary" variant="subtle" size="sm" icon="heroicons:shopping-cart" label="Add to cart"
                     class="ml-auto" @click="onAdd" />
             </div>

@@ -8,7 +8,6 @@
     <UApp>
       <UiAppTheme>
         <SharedNavBar />
-        <SharedCartComponent />
         <slot />
         <SharedFooter />
       </UiAppTheme>

@@ -8,20 +8,20 @@ const shopStore = useShopStore()
         <div class="container mx-auto px-4 py-12">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
                 <div class="flex items-start gap-3">
-                    <Icon name="heroicons:heart-solid" class="size-6 text-primary-400 mt-1" />
+
                     <div>
-                        <NuxtLink to="/" class="text-lg font-semibold hover:text-primary-300">BreadWinners</NuxtLink>
-                        <div class="text-sm text-neutral-400">Fresh bakes & local flavors</div>
-                        <div class="mt-2 text-sm text-neutral-400">Location: Legon Campus</div>
+                        <NuxtLink to="/" class="text-lg font-semibold hover:text-primary-300">
+                            <NuxtImg src="/images/logo.avif" alt="BreadWinners" class="w-32" />
+                        </NuxtLink>
+                        <div class="text-sm text-neutral-400 mt-2">Because you are our bread winner</div>
+
                     </div>
                 </div>
 
                 <nav class="flex gap-6">
-                    <template v-for="shop in shopStore.shops" :key="shop.id">
-                        <NuxtLink :to="`/${shop.slug}/${shop.id}`" class="text-neutral-300 hover:text-white">
-                            {{ shop.name }}
-                        </NuxtLink>
-                    </template>
+                    <NuxtLink to="/menu" class="text-neutral-300 hover:text-white">
+                        Our Menu
+                    </NuxtLink>
                     <NuxtLink to="/track-order" class="text-neutral-300 hover:text-white">Track Order</NuxtLink>
                 </nav>
 

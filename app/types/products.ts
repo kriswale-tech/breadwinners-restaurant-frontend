@@ -52,6 +52,8 @@ export interface ProductPackage {
     image?: string
     is_active: boolean
     items: ProductPackageItem[]
+    /** When present, used for cart / routing (e.g. home catalog) */
+    shop_id?: number
     created_at?: string
     updated_at?: string
 }
