@@ -14,6 +14,12 @@ export interface VerifyPaymentResponse {
     order: OrderDetail
 }
 
+export interface TrackOrderResponse {
+    status: string
+    message: string
+    order?: OrderDetail | null
+}
+
 /**
  * Cart line: product or package. Use `item_id` (e.g. product-1 vs package-1) so numeric ids never collide.
  */
@@ -133,6 +139,15 @@ export const useCartStore = defineStore('cart', () => {
         }
     }
 
+    async function trackOrder(phone: string, orderNumber: string) {
+        const q = new URLSearchParams({
+            customer_phone: phone,
+            order_number: orderNumber,
+        })
+        const response = await get<TrackOrderResponse>(`orders/track/?${q.toString()}`)
+        return response
+    }
+
     return {
         items,
         addToCart,
@@ -145,6 +160,7 @@ export const useCartStore = defineStore('cart', () => {
         loading,
         verifyPayment,
         createOrderWithoutPayment,
+        trackOrder,
     }
 }, {
     persist: true,

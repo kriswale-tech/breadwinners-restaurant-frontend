@@ -84,7 +84,17 @@ const buildOrderPayload = (formData: CustomerFormData) => {
 
 
 // Handle payment button click from OrderSummary
-const handleMakePayment = async (payLater = false) => {
+const handleMakePayment = async (shopId?: number, payLater = false) => {
+    if (!shopId) {
+        toast.add({
+            title: 'Error',
+            description: 'Shop ID is required',
+            color: 'error',
+            icon: 'heroicons:exclamation-triangle'
+        })
+        return
+    }
+
     // Validate customer information
     if (!customerInfoRef.value) {
         toast.add({
@@ -121,7 +131,7 @@ const handleMakePayment = async (payLater = false) => {
         if (payLater) {
             // create order without payment
             try {
-                const order = await cartStore.createOrderWithoutPayment(payload)
+                const order = await cartStore.createOrderWithoutPayment(payload, shopId!)
                 storePaymentOrderDetail(order)
                 navigateTo(`/checkout/${encodeURIComponent(order.order_number)}/payment-success`)
                 resetCustomerInfo()
@@ -136,7 +146,7 @@ const handleMakePayment = async (payLater = false) => {
             }
         } else {
             try {
-                const response = await cartStore.createOrder(payload)
+                const response = await cartStore.createOrder(payload, shopId!)
                 paystackData.value = response
             } catch (error) {
                 const errorResponse = error as ErrorResponse
@@ -214,8 +224,9 @@ watch(paystackData, (newVal) => {
                     <div class="sticky top-20">
                         <div
                             class="bg-neutral-50 dark:bg-neutral-800 rounded-xl p-6 border border-neutral-200 dark:border-neutral-700">
-                            <CheckoutOrderSummary @make-payment="handleMakePayment"
-                                @make-payment-on-pickup="handleMakePayment(true)"
+                            <CheckoutOrderSummary show-shop-selector
+                                @make-payment="(shopId) => handleMakePayment(shopId, false)"
+                                @make-payment-on-pickup="(shopId) => handleMakePayment(shopId, true)"
                                 :is-pickup-delivery="isPickupDelivery" />
                         </div>
                     </div>

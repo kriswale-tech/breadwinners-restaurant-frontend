@@ -8,6 +8,9 @@ export const useShopStore = defineStore('shop', () => {
 
     const selectedShop = ref<Shop | undefined>(undefined)
 
+    // This is for the client side order when they have to select a shop to order from
+    const selectedShopId = ref<number | undefined>(undefined)
+
     function setSelectedShop(shopId: number) {
         selectedShop.value = shops.value.find(shop => shop.id === shopId)
         if (window !== undefined) {
@@ -37,6 +40,7 @@ export const useShopStore = defineStore('shop', () => {
         setSelectedShop,
         loading,
         getSelectedShop,
+        selectedShopId,
     }
 }, {
     persist: true

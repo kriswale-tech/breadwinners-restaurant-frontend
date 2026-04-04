@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import type { OrderItemType, OrderItemType2 } from '~/stores/order-store'
 import type { CartLine } from '~/stores/cart-store'
-
 /**
  * OrderSummary Component
  * Displays order items and total with Make Payment button
  */
 const cartStore = useCartStore()
+const toast = useToast()
 
 const props = defineProps<{
     items?: (OrderItemType | OrderItemType2)[]
@@ -15,6 +15,7 @@ const props = defineProps<{
     allowClear?: boolean
     loading?: boolean
     isPickupDelivery?: boolean
+    showShopSelector?: boolean
 }>()
 
 const items = computed(() => props.items ?? cartStore.items)
@@ -23,8 +24,8 @@ const totalPrice = computed(() => props.totalPrice?.toFixed(2) ?? cartStore.tota
 
 // Emit event when payment button is clicked
 const emit = defineEmits<{
-    (e: 'make-payment'): void
-    (e: 'make-payment-on-pickup'): void
+    (e: 'make-payment', shopId?: number): void
+    (e: 'make-payment-on-pickup', shopId?: number): void
     (e: 'clear-products'): void
     (e: 'remove-product', payload: string): void
 }>()
@@ -33,12 +34,40 @@ const emit = defineEmits<{
 const formattedTotal = computed(() => cartStore.totalPrice.toFixed(2))
 
 // Handle payment button click
+function checkoutShopId() {
+    return selectedShopId.value
+}
+
 const handlePayment = () => {
-    emit('make-payment')
+    if (props.showShopSelector) {
+        if (!checkoutShopId()) {
+            toast.add({
+                title: 'Error',
+                description: 'Please select a shop to make payment',
+                color: 'error',
+                icon: 'heroicons:exclamation-triangle',
+            })
+            return
+        }
+        emit('make-payment', checkoutShopId())
+    }
+    else emit('make-payment')
 }
 
 const handlePaymentOnPickup = () => {
-    emit('make-payment-on-pickup')
+    if (props.showShopSelector) {
+        if (!checkoutShopId()) {
+            toast.add({
+                title: 'Error',
+                description: 'Please select a shop to make payment',
+                color: 'error',
+                icon: 'heroicons:exclamation-triangle',
+            })
+            return
+        }
+        emit('make-payment-on-pickup', checkoutShopId())
+    }
+    else emit('make-payment-on-pickup')
 }
 
 const handleClearProducts = () => {
@@ -55,6 +84,36 @@ function lineKey(item: OrderItemType | OrderItemType2 | CartLine): string {
     if ('item_id' in item) return item.item_id
     return String(item.id)
 }
+
+const shopStore = useShopStore()
+const { selectedShopId } = storeToRefs(shopStore)
+
+const shopSelectItems = computed(() =>
+    shopStore.shops
+        .filter((s) => s.is_active)
+        .map((s) => ({ label: s.name, value: s.id })),
+)
+
+/** Default checkout shop id when list loads and current id is missing or invalid */
+watch(shopSelectItems, (items) => {
+    if (!props.showShopSelector || items.length === 0) return
+    const current = selectedShopId.value
+    const stillValid = current != null && items.some((i) => i.value === current)
+    if (stillValid) return
+    const first = items[0]
+    selectedShopId.value = first?.value
+}, { immediate: true })
+
+onMounted(async () => {
+    if (props.showShopSelector && !shopStore.shops.length) {
+        await shopStore.getShops()
+    }
+})
+
+const paymentDisabledByShop = computed(
+    () => Boolean(props.showShopSelector) && selectedShopId.value == null,
+)
+
 </script>
 
 <template>
@@ -129,21 +188,28 @@ function lineKey(item: OrderItemType | OrderItemType2 | CartLine): string {
             </template>
         </ClientOnly>
 
+        <div v-if="showShopSelector" class="space-y-2">
+            <UFormField hint="Select a shop near you" label="Shop" name="shop" required>
+                <USelect v-model="selectedShopId" :items="shopSelectItems" value-key="value" placeholder="Select shop"
+                    class="w-full" />
+            </UFormField>
+        </div>
+
         <!-- Make Payment Button -->
         <div class="">
             <!-- if is pickup delivery, show pickup button -->
             <div class="flex gap-2" v-if="isPickupDelivery">
                 <UButton block size="lg" color="primary" label="Pay now" icon="heroicons:credit-card" class="mt-6"
-                    @click="handlePayment" :loading="loading" :disabled="loading" />
+                    @click="handlePayment" :loading="loading" :disabled="loading || paymentDisabledByShop" />
                 <UButton block size="lg" color="primary" label="Pay on Pickup" icon="heroicons:building-office"
-                    class="mt-6" @click="handlePaymentOnPickup" :loading="loading" :disabled="loading"
-                    variant="outline" />
+                    class="mt-6" @click="handlePaymentOnPickup" :loading="loading"
+                    :disabled="loading || paymentDisabledByShop" variant="outline" />
             </div>
 
             <div class="" v-else>
                 <UButton block size="lg" color="primary" :label="buttonLabel ?? 'Make Payment'"
                     icon="heroicons:credit-card" class="mt-6" @click="handlePayment" :loading="loading"
-                    :disabled="loading" />
+                    :disabled="loading || paymentDisabledByShop" />
             </div>
 
             <!-- if allow clear, show clear button -->

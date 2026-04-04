@@ -30,7 +30,8 @@ const emit = defineEmits<{
 }>()
 
 const cartStore = useCartStore()
-
+const shopStore = useShopStore()
+const { selectedShopId } = storeToRefs(shopStore)
 const verificationFailed = ref(false)
 const errorMessage = ref('')
 const lastAttemptedReference = ref<string | null>(null)
@@ -57,7 +58,7 @@ async function runVerification(reference: string) {
 
     try {
         console.log('Verifying payment for reference:', reference)
-        const data = await cartStore.verifyPayment(reference)
+        const data = await cartStore.verifyPayment(reference, selectedShopId.value!)
         console.log('Payment verification response:', data)
         if (
             data?.status?.toLowerCase() === 'success'
