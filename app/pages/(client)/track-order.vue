@@ -100,7 +100,7 @@ function handleDownloadReceipt() {
           Track your order
         </h1>
         <p class="mx-auto mt-3 max-w-md text-sm leading-relaxed text-neutral-600 dark:text-neutral-400">
-          Enter the phone number and order number from your SMS or receipt. We’ll show your order status and
+          Enter the phone number and order number from your SMS or receipt. We'll show your order status and
           items below.
         </p>
       </div>
